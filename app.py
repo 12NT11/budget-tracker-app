@@ -5,16 +5,29 @@ st.set_page_config(page_title="ניהול תקציב אישי", layout="centered
 
 st.title("💰 מערכת ניהול תקציב חכמה")
 
-# טעינת הנתונים מ-Google Sheets
+# טעינת הנתונים מ-Google Sheets (דרך כתובת ציבורית או קובץ CSV מפורסם ב-Web)
 @st.cache_data(ttl=600)
 def load_data():
     try:
-        conn = st.connection("gsheets", type="gsheets")
-        df = conn.read(worksheet="Sheet1", ttl=5)
+        # הדרך הקלה ביותר ללא מפתחות: ייצוא הגיליון כ-CSV מהרשת (פורסם לאינטרנט)
+        # או שימוש בקישור הציבורי של הגיליון
+        sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        # המרת קישור גוגל שיטס לקישור ייצוא CSV אויר
+        if "/edit" in sheet_url:
+            csv_url = sheet_url.split("/edit")[0] + "/export?format=csv"
+        else:
+            csv_url = sheet_url
+            
+        df = pd.read_csv(csv_url)
         return df
     except Exception as e:
-        st.error(f"שגיאה בחיבור לגיליון: {e}")
-        return pd.DataFrame()
+        # גיבוי מקומי אם הקישור לא תקין עדיין
+        st.warning("טוען נתוני דמה לבדיקה מקומית...")
+        return pd.DataFrame([
+            {"תאריך": "2026-07-15", "שם עסק": "סולמייט", "סכום": 857.0, "סוג הוצאה": "קבוע", "קטגוריה": "חיות מחמד"},
+            {"תאריך": "2026-07-18", "שם עסק": "עירית בני ברק", "סכום": 541.6, "סוג הוצאה": "קבוע", "קטגוריה": "חשבונות ודירה"},
+            {"תאריך": "2026-07-20", "שם עסק": "אושר עד בני ברק", "סכום": 338.8, "סוג הוצאה": "קבוע", "קטגוריה": "סופר ופארם"}
+        ])
 
 df = load_data()
 
@@ -29,9 +42,7 @@ type_col = 'סוג הוצאה' if 'סוג הוצאה' in df.columns else None
 name_col = 'שם עסק' if 'שם עסק' in df.columns else None
 
 if amount_col and type_col:
-    # המרת עמודת הסכום למספרים
     df[amount_col] = pd.to_numeric(df[amount_col], errors='coerce').fillna(0)
-    
     total_fixed = df[df[type_col].astype(str).str.contains('קבוע', na=False)][amount_col].sum()
     total_variable = df[df[type_col].astype(str).str.contains('משתנה', na=False)][amount_col].sum()
 
@@ -62,7 +73,7 @@ with tab2:
             cols.write(f"**{row['name']}** (₪{row['total_amount']:,.2f})")
             cols.caption(f"{row['count']} עסקאות")
     else:
-        st.warning("לא נמצאו עמודות מתאימות בגיליון. ודא שהכותרות הן: תאריך, סכום, שם עסק, סוג הוצאה, קטגוריה, הערות.")
+        st.warning("לא נמצאו עמודות מתאימות בגיליון.")
 
 with tab3:
     st.subheader("רשימת עסקאות מלאה")
