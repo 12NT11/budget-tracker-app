@@ -18,24 +18,24 @@ def load_data():
         df = pd.read_csv(csv_url)
         return df
     except Exception as e:
-        st.warning("טוען נתוני דמה לבדיקה מקומית...")
-        return pd.DataFrame([
-            {"תאריך": "2026-07-15", "שם עסק": "סולמייט", "סכום": 857.0, "סוג הוצאה": "קבוע", "קטגוריה": "חיות מחמד"},
-            {"תאריך": "2026-07-18", "שם עסק": "עירית בני ברק", "סכום": 541.6, "סוג הוצאה": "קבוע", "קטגוריה": "חשבונות ודירה"},
-            {"תאריך": "2026-07-20", "שם עסק": "אושר עד בני ברק", "סכום": 338.8, "סוג הוצאה": "קבוע", "קטגוריה": "סופר ופארם"}
-        ])
+        return pd.DataFrame()
 
 df = load_data()
+
+# הצגת העמודות שזוהו בראש הדף כדי שנראה בדיוק מה השמות
+st.sidebar.write("עמודות שזוהו בגיליון:", list(df.columns))
 
 # הגדרת משתני בסיס
 estimated_income = 17750
 total_fixed = 0.0
 total_variable = 0.0
 
-# בדיקת עמודות מול הכותרות בגיליון
-amount_col = 'סכום' if 'סכום' in df.columns else None
-type_col = 'סוג הוצאה' if 'סוג הוצאה' in df.columns else None
-name_col = 'שם עסק' if 'שם עסק' in df.columns else None
+# זיהוי חכם של עמודות הסכום וסוג ההוצאה (מתעלם מרווחים ואותיות קטנות/גדולות)
+df.columns = df.columns.str.strip() # מנקה רווחים מיותרים מהכותרות
+
+amount_col = next((col for col in df.columns if 'סכום' in col or 'amount' in col.lower()), None)
+type_col = next((col for col in df.columns if 'סוג' in col or 'type' in col.lower()), None)
+name_col = next((col for col in df.columns if 'עסק' in col or 'name' in col.lower()), None)
 
 if amount_col and type_col:
     df[amount_col] = pd.to_numeric(df[amount_col], errors='coerce').fillna(0)
