@@ -5,14 +5,11 @@ st.set_page_config(page_title="ניהול תקציב אישי", layout="centered
 
 st.title("💰 מערכת ניהול תקציב חכמה")
 
-# טעינת הנתונים מ-Google Sheets (דרך כתובת ציבורית או קובץ CSV מפורסם ב-Web)
+# טעינת הנתונים מ-Google Sheets
 @st.cache_data(ttl=600)
 def load_data():
     try:
-        # הדרך הקלה ביותר ללא מפתחות: ייצוא הגיליון כ-CSV מהרשת (פורסם לאינטרנט)
-        # או שימוש בקישור הציבורי של הגיליון
         sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-        # המרת קישור גוגל שיטס לקישור ייצוא CSV אויר
         if "/edit" in sheet_url:
             csv_url = sheet_url.split("/edit")[0] + "/export?format=csv"
         else:
@@ -21,7 +18,6 @@ def load_data():
         df = pd.read_csv(csv_url)
         return df
     except Exception as e:
-        # גיבוי מקומי אם הקישור לא תקין עדיין
         st.warning("טוען נתוני דמה לבדיקה מקומית...")
         return pd.DataFrame([
             {"תאריך": "2026-07-15", "שם עסק": "סולמייט", "סכום": 857.0, "סוג הוצאה": "קבוע", "קטגוריה": "חיות מחמד"},
@@ -36,7 +32,7 @@ estimated_income = 17750
 total_fixed = 0.0
 total_variable = 0.0
 
-# בדיקת עמודות מול הכותרות החדשות שהגדרת בגיליון
+# בדיקת עמודות מול הכותרות בגיליון
 amount_col = 'סכום' if 'סכום' in df.columns else None
 type_col = 'סוג הוצאה' if 'סוג הוצאה' in df.columns else None
 name_col = 'שם עסק' if 'שם עסק' in df.columns else None
@@ -69,9 +65,9 @@ with tab2:
         businesses.columns = ['name', 'total_amount', 'count']
 
         for index, row in businesses.iterrows():
-            cols = st.columns([2, 1])
-            cols.write(f"**{row['name']}** (₪{row['total_amount']:,.2f})")
-            cols.caption(f"{row['count']} עסקאות")
+            col1, col2 = st.columns([3, 1])
+            col1.write(f"**{row['name']}** (₪{row['total_amount']:,.2f})")
+            col2.caption(f"{row['count']} עסקאות")
     else:
         st.warning("לא נמצאו עמודות מתאימות בגיליון.")
 
