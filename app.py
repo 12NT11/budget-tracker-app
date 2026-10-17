@@ -2,11 +2,27 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-st.set_page_config(page_title="ניהול תקציב חכם", layout="centered")
+st.set_page_config(page_title="ניהול תקציב חכם", layout="wide")
+
+# הוספת עיצוב RTL ויישור מימין לשמאל
+st.markdown(
+    """
+    <style>
+    div.block-container {
+        direction: rtl;
+        text-align: right;
+    }
+    .stMetric {
+        text-align: right;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 st.title("💰 מערכת ניהול תקציב חכמה")
 
-# אתחול זיכרון מקומי לעסקאות חדשות שנוספו מהאפליקציה
+# אתחול זיכרון מקומי לעסקאות חדשות
 if 'added_transactions' not in st.session_state:
     st.session_state.added_transactions = []
 
@@ -28,7 +44,6 @@ def load_data():
 
 base_df = load_data()
 
-# מיזוג הנתונים מהגיליון עם העסקאות החדשות שהוזנו מהאפליקציה בזיכרון
 if st.session_state.added_transactions:
     new_df = pd.DataFrame(st.session_state.added_transactions)
     if not base_df.empty:
@@ -46,8 +61,9 @@ if not df.empty:
     cat_col = next((col for col in df.columns if 'קטגוריה' in col), 'קטגוריה')
 
     df[amount_col] = pd.to_numeric(df[amount_col], errors='coerce').fillna(0)
-    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
-    df['חודש'] = df[date_col].dt.strftime('%Y-%m')
+    # המרה לתאריך נקי ללא שעות
+    df['parsed_date'] = pd.to_datetime(df[date_col], errors='coerce')
+    df['חודש'] = df['parsed_date'].dt.strftime('%Y-%m')
 
     current_month_str = datetime.now().strftime('%Y-%m')
     available_months = sorted(df['חודש'].dropna().unique(), reverse=True)
@@ -61,8 +77,7 @@ else:
     amount_col, type_col, name_col, date_col, cat_col = 'סכום', 'סוג הוצאה', 'שם עסק', 'תאריך', 'קטגוריה'
     selected_month = datetime.now().strftime('%Y-%m')
 
-# --- תכונה 1: הגדרת הוצאות קבועות צפויות לחודש (שטרם ירדו) ---
-# אפשר לעדכן כאן את ההוצאות הקבועות הקבועות שלך
+# הוצאות קבועות צפויות
 expected_fixed_expenses = {
     "שכירות / משכנתא": 4500,
     "ארנונה": 541.6,
@@ -71,9 +86,9 @@ expected_fixed_expenses = {
     "חיות מחמד (מזון קבוע)": 300
 }
 
-# --- תכונה 2: טופס הזנה מהיר בסרגל הצד ---
+# טופס הזנה מהיר בסרגל הצד
 st.sidebar.divider()
-st.sidebar.subheader("➕ הוספת עסקה מהيرة")
+st.sidebar.subheader("➕ הוספת עסקה מהירה")
 with st.sidebar.form("quick_add_form"):
     q_date = st.date_input("תאריך", value=datetime.now())
     q_name = st.text_input("שם עסק")
@@ -84,7 +99,7 @@ with st.sidebar.form("quick_add_form"):
     submitted = st.form_submit_button("שמור עסקה")
     if submitted and q_name and q_amount > 0:
         new_row = {
-            date_col: pd.to_datetime(q_date),
+            date_col: q_date.strftime('%Y-%m-%d'),
             name_col: q_name,
             amount_col: q_amount,
             type_col: q_type,
@@ -95,7 +110,6 @@ with st.sidebar.form("quick_add_form"):
         st.sidebar.success("העסקה נוספה בהצלחה!")
         st.rerun()
 
-# חישובים
 estimated_income = 17750
 
 if not filtered_df.empty:
@@ -110,26 +124,35 @@ else:
     fixed_paid_df = pd.DataFrame()
     variable_df = pd.DataFrame()
 
-# חישוב קבועות צפויות שטרם ירדו
 total_expected_fixed = sum(expected_fixed_expenses.values())
-# אומדן של קבועות שטרם ירדו (ההפרש בין הצפוי למה ששולם בפועל, לא יורד מתחת ל-0)
 unpaid_fixed_estimate = max(0, total_expected_fixed - total_fixed_paid)
 
 total_expenses = total_fixed_paid + total_variable
 true_remaining = estimated_income - total_expenses - unpaid_fixed_estimate
 
-# טאבים
+# פונקציה לניקוי תצוגת הטבלאות (הסרת השעות המיותרות מהתאריכים)
+def clean_display_df(frame):
+    if frame.empty:
+        return frame
+    display_df = frame.copy()
+    if 'parsed_date' in display_df.columns:
+        display_df[date_col] = display_df['parsed_date'].dt.strftime('%Y-%m-%d')
+    elif date_col in display_df.columns:
+        display_df[date_col] = pd.to_datetime(display_df[date_col], errors='coerce').dt.strftime('%Y-%m-%d')
+    return display_df[[date_col, name_col, amount_col, cat_col]]
+
 tab1, tab2, tab3 = st.tabs(["📊 דאשבורד חודשי", "🏢 ניהול עסקים", "💳 כל העסקאות"])
 
 with tab1:
     st.subheader(f"מעקב חודש: {selected_month}")
     
-    # מדדי תקציב
+    # 4 עמודות מסודרות שמונעות חיתוך מספרים
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("הכנסה משוערת", f"₪{estimated_income:,.2f}")
     col2.metric("הוצאות בפועל", f"₪{total_expenses:,.2f}")
     col3.metric("קבועות שטרם ירדו", f"~₪{unpaid_fixed_estimate:,.2f}")
-    col4.metric("יתרה פנויה אמיתית", f"₪{true_remaining:,.2f}", delta=f"₪{true_remaining}" if true_remaining >= 0 else f"-₪{abs(true_remaining)}")
+    # פורמט מסודר לדלתא בלי ספרות עשרוניות ארוכות מדי
+    col4.metric("יתרה פנויה אמיתית", f"₪{true_remaining:,.2f}", delta=f"₪{true_remaining:,.2f}")
 
     if true_remaining >= 0:
         st.success("🎯 מצוין! אנחנו עומדים ביעד ובתוך התקציב כולל ההתחייבויות הקבועות.")
@@ -138,13 +161,12 @@ with tab1:
 
     st.divider()
 
-    # פירוט קבועות ומשתנות
     c_left, c_right = st.columns(2)
     
     with c_left:
         st.markdown("### 📌 הוצאות קבועות שירדו")
         if not fixed_paid_df.empty:
-            st.dataframe(fixed_paid_df[[date_col, name_col, amount_col, cat_col]], use_container_width=True, hide_index=True)
+            st.dataframe(clean_display_df(fixed_paid_df), use_container_width=True, hide_index=True)
             st.caption(f"סה״כ שירדו: **₪{total_fixed_paid:,.2f}**")
         else:
             st.info("אין עדיין הוצאות קבועות שרשומות לחודש זה.")
@@ -152,14 +174,13 @@ with tab1:
     with c_right:
         st.markdown("### 🛍️ הוצאות משתנות")
         if not variable_df.empty:
-            st.dataframe(variable_df[[date_col, name_col, amount_col, cat_col]], use_container_width=True, hide_index=True)
+            st.dataframe(clean_display_df(variable_df), use_container_width=True, hide_index=True)
             st.caption(f"סה״כ משתנות: **₪{total_variable:,.2f}**")
         else:
             st.info("אין הוצאות משתנות רשומות לחודש זה.")
 
     st.divider()
 
-    # --- תכונה 3: תקציב קטגוריות והתראות חריגה ---
     st.subheader("🎯 מעקב יעדי תקציב לקטגוריות משתנות")
     category_budgets = {
         "סופר ופארם": 3500,
@@ -196,4 +217,7 @@ with tab2:
 
 with tab3:
     st.subheader("כל העסקאות")
-    st.dataframe(df, use_container_width=True)
+    display_all_df = df.copy()
+    if 'parsed_date' in display_all_df.columns:
+        display_all_df[date_col] = display_all_df['parsed_date'].dt.strftime('%Y-%m-%d')
+    st.dataframe(display_all_df, use_container_width=True)
