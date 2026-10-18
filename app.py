@@ -4,7 +4,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="ניהול תקציב חכם", layout="centered", initial_sidebar_state="collapsed")
 
-# --- CSS עיצוב מתקדם בסגנון RiseUp ---
+# --- CSS עיצוב מלוטש ומדויק בסגנון RiseUp ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap');
@@ -16,7 +16,7 @@ st.markdown("""
     }
     
     .stApp {
-        background-color: #0F172A;
+        background-color: #0B132B;
         color: #F8FAFC;
     }
     
@@ -31,55 +31,53 @@ st.markdown("""
         padding-right: 0.8rem !important;
     }
 
-    /* כרטיסיית יתרה ראשית */
+    /* כרטיסיית יתרה ראשית (Hero) */
     .hero-card {
-        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-        border: 1px solid #334155;
-        border-radius: 16px;
-        padding: 16px 12px;
+        background: linear-gradient(135deg, #1C2541 0%, #0B132B 100%);
+        border: 1px solid #3A506B;
+        border-radius: 20px;
+        padding: 18px 14px;
         text-align: center;
-        margin-bottom: 12px;
-        box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.4);
+        margin-bottom: 14px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
     }
     .hero-title {
         font-size: 0.85rem;
         color: #94A3B8;
+        font-weight: 500;
         margin-bottom: 4px;
     }
     .hero-amount {
-        font-size: 2.1rem;
+        font-size: 2.2rem;
         font-weight: 700;
-        color: #38BDF8;
+        color: #48CAE4;
         direction: ltr;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
     }
     .hero-stats {
         display: flex;
         justify-content: space-between;
-        border-top: 1px solid #334155;
+        border-top: 1px solid #3A506B;
         padding-top: 10px;
-        font-size: 0.72rem;
+        font-size: 0.75rem;
     }
     .hero-stat-val {
-        font-weight: 600;
+        font-weight: 700;
         color: #F1F5F9;
         display: block;
         margin-top: 2px;
     }
 
-    /* כרטיסייה ראשית לקבוצות */
+    /* כרטיסיית קבוצה ראשית */
     .group-card {
-        background-color: #1E293B;
-        border-radius: 12px;
+        background-color: #1C2541;
+        border-radius: 14px;
         padding: 12px 16px;
-        margin-bottom: 10px;
-        border: 1px solid #334155;
-    }
-    .group-header {
+        margin-bottom: 8px;
+        border: 1px solid #3A506B;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 6px;
     }
     .group-title {
         font-weight: 600;
@@ -87,33 +85,35 @@ st.markdown("""
         color: #F8FAFC;
     }
     .group-amounts {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         direction: ltr;
-        color: #38BDF8;
+        color: #48CAE4;
         font-weight: 700;
     }
 
-    /* פריט בודד בתוך פירוט */
+    /* שורת פריט בודד נקי בתוך פירוט */
     .item-row {
         background-color: #0F172A;
-        border-radius: 8px;
-        padding: 8px 12px;
+        border-radius: 10px;
+        padding: 10px 12px;
         margin-bottom: 6px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border: 1px solid #334155;
+        border: 1px solid #1E293B;
     }
 
+    /* יישור כפתורי popover בצורה אלגנטית */
     div[data-testid="stPopover"] > button {
-        padding: 2px 8px !important;
-        font-size: 0.7rem !important;
+        padding: 2px 10px !important;
+        font-size: 0.72rem !important;
         min-height: 0px !important;
-        height: 26px !important;
-        border-radius: 6px !important;
-        background-color: #334155 !important;
-        color: #38BDF8 !important;
-        border: 1px solid #475569 !important;
+        height: 30px !important;
+        border-radius: 8px !important;
+        background-color: #3A506B !important;
+        color: #48CAE4 !important;
+        border: none !important;
+        font-weight: 600 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -185,6 +185,7 @@ else:
     st.caption("📅 מחזור תקציב פעיל:")
     st.selectbox("בחירת מחזור", [today_cycle], index=0, label_visibility="collapsed")
 
+# רשימת הוצאות קבועות צפויות (ללא כפילויות)
 expected_fixed_expenses = {
     "שכירות / משכנתא": 4500.0,
     "סולמייט (חיות)": 857.0,
@@ -211,7 +212,7 @@ unpaid_fixed_dict = {item: exp for item, exp in expected_fixed_expenses.items()
 unpaid_fixed_total = sum(unpaid_fixed_dict.values())
 true_remaining = estimated_income - (total_fixed_paid + total_variable + unpaid_fixed_total)
 
-# --- 1. כרטיסיית HERO הראשית (סגנון RiseUp) ---
+# --- 1. כרטיסיית HERO הראשית (RiseUp Style) ---
 st.markdown(f"""
 <div class="hero-card">
     <div class="hero-title">💎 יתרה פנויה אמיתית להוצאות</div>
@@ -246,21 +247,19 @@ with st.expander("➕ הוסף עסקה חדשה למחזור"):
 
 st.divider()
 
-# --- 3. בלוק קבועות בסגנון RiseUp (עם פסי התקדמות) ---
+# --- 3. התחייבויות קבועות (עם פס התקדמות) ---
 total_expected_fixed = sum(expected_fixed_expenses.values())
 fixed_progress = min(1.0, total_fixed_paid / total_expected_fixed) if total_expected_fixed > 0 else 0
 
 st.markdown(f"""
 <div class="group-card">
-    <div class="group-header">
-        <span class="group-title">📌 התחייבויות קבועות</span>
-        <span class="group-amounts">₪{total_fixed_paid:,.0f} / ₪{total_expected_fixed:,.0f}</span>
-    </div>
+    <span class="group-title">📌 התחייבויות קבועות</span>
+    <span class="group-amounts">₪{total_fixed_paid:,.0f} / ₪{total_expected_fixed:,.0f}</span>
 </div>
 """, unsafe_allow_html=True)
 st.progress(fixed_progress)
 
-# פירוט הקבועות באקורדיון נקי
+# פירוט הקבועות
 with st.expander("🔍 פירוט הוצאות קבועות ועדכון סטטוס"):
     for item_name, exp_amount in expected_fixed_expenses.items():
         is_paid = item_name not in unpaid_fixed_dict
@@ -269,16 +268,17 @@ with st.expander("🔍 פירוט הוצאות קבועות ועדכון סטט�
             amt = actual_row[amount_col].values[0] if not actual_row.empty else exp_amount
             st.markdown(f"""
             <div class="item-row">
-                <div>🟢 {item_name} <span style="font-size:0.75rem; color:#4ADE80;">(ירד)</span></div>
-                <div style="font-weight:700; direction:ltr;">₪{amt:,.1f}</div>
+                <div>🟢 <b>{item_name}</b> <span style="font-size:0.75rem; color:#4ADE80;">(ירד החודש)</span></div>
+                <div style="font-weight:700; direction:ltr; color:#4ADE80;">₪{amt:,.1f}</div>
             </div>
             """, unsafe_allow_html=True)
         else:
-            col_inf, col_btn = st.columns([3, 1])
-            with col_inf:
+            col_txt, col_btn = st.columns([2.5, 1.5])
+            with col_txt:
                 st.markdown(f"""
                 <div style="padding-top:4px;">
-                    🟠 {item_name} <span style="font-size:0.75rem; color:#FB923C;">(צפוי: ₪{exp_amount:,.1f})</span>
+                    🟠 <b>{item_name}</b> <br>
+                    <span style="font-size:0.75rem; color:#FB923C;">צפוי: ₪{exp_amount:,.1f}</span>
                 </div>
                 """, unsafe_allow_html=True)
             with col_btn:
@@ -296,17 +296,14 @@ with st.expander("🔍 פירוט הוצאות קבועות ועדכון סטט�
 
 st.divider()
 
-# --- 4. בלוק הוצאות משתנות בסגנון RiseUp ---
+# --- 4. הוצאות משתנות (שוטפות) ---
 st.markdown(f"""
 <div class="group-card">
-    <div class="group-header">
-        <span class="group-title">🛍️ הוצאות משתנות (שוטפות)</span>
-        <span class="group-amounts">סה"כ: ₪{total_variable:,.0f}</span>
-    </div>
+    <span class="group-title">🛍️ הוצאות משתנות (שוטפות)</span>
+    <span class="group-amounts">סה"כ: ₪{total_variable:,.0f}</span>
 </div>
 """, unsafe_allow_html=True)
 
-# פירוט עסקאות משתנות באקורדיון
 with st.expander("🔍 פירוט עסקאות משתנות אחרונות"):
     if not variable_df.empty:
         for _, row in variable_df.tail(10).iterrows():
@@ -318,7 +315,7 @@ with st.expander("🔍 פירוט עסקאות משתנות אחרונות"):
             st.markdown(f"""
             <div class="item-row">
                 <div>
-                    <div>{c_name}</div>
+                    <div style="font-weight:600;">{c_name}</div>
                     <div style="font-size:0.72rem; color:#94A3B8;">{t_date} • {c_cat}</div>
                 </div>
                 <div style="font-weight:700; direction:ltr;">₪{amt_val:,.1f}</div>
