@@ -80,16 +80,15 @@ st.markdown("""
         border: 1px solid #3A506B;
     }
     
-    div[data-testid="stPopover"] > button {
-        padding: 2px 8px !important;
-        font-size: 0.7rem !important;
-        min-height: 0px !important;
-        height: 28px !important;
-        border-radius: 6px !important;
+    /* עיצוב כפתורי פעולה רגילים */
+    .stButton > button {
+        border-radius: 8px !important;
         background-color: #3A506B !important;
         color: #48CAE4 !important;
         border: none !important;
         font-weight: 600 !important;
+        font-size: 0.8rem !important;
+        width: 100% !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -232,13 +231,33 @@ with st.expander("➕ הוספת עסקה חדשה למחזור"):
 
 st.divider()
 
+# --- הגדרת חלון דיאלוג (Modal) לעדכון חיוב ---
+@st.dialog("עדכון חיוב והעברה לבוצע")
+def edit_expense_dialog(item_name, default_amt, category):
+    st.write(f"עדכון סכום בפועל עבור **{item_name}**:")
+    new_amt = st.number_input("סכום (₪)", value=float(default_amt))
+    if st.button("אישור וסימון כבוצע", type="primary"):
+        st.session_state.added_transactions.append({
+            date_col: datetime.now().strftime('%Y-%m-%d'),
+            name_col: item_name,
+            amount_col: new_amt,
+            type_col: "קבוע",
+            cat_col: category
+        })
+        st.success("החיוב עודכן בהצלחה!")
+        st.rerun()
+
 # --- 3. ציר זמן תזרימי אחיד (Chronological Ledger) ---
 st.markdown("### **תזרימי מחזור (לפי תאריך)**")
 
 timeline_items = []
 
-# הוספת קבועות עתידיות
+added_keys = set()
 for item_name, info in unpaid_fixed_dict.items():
+    if item_name in added_keys:
+        continue
+    added_keys.add(item_name)
+    
     d_val = info["day"]
     m_val = next_month.month if info.get("month_offset", 0) == 1 else start_dt.month
     y_val = next_month.year if info.get("month_offset", 0) == 1 and m_val == 1 else start_dt.year
@@ -257,7 +276,6 @@ for item_name, info in unpaid_fixed_dict.items():
         "key": item_name
     })
 
-# הוספת עסקאות קיימות
 if not filtered_df.empty:
     for _, row in filtered_df.iterrows():
         p_date = row['parsed_date']
@@ -271,12 +289,11 @@ if not filtered_df.empty:
             "key": str(row[name_col]) + str(row[amount_col])
         })
 
-# מיון כרונולוגי
 timeline_items.sort(key=lambda x: x["date"])
 
 for item in timeline_items:
     if item["status"] == "pending":
-        col_info, col_action = st.columns([3, 1])
+        col_info, col_btn = st.columns([3, 1])
         with col_info:
             st.markdown(f"""
             <div class="ledger-row" style="border-right: 3px solid #E0A96D;">
@@ -288,18 +305,9 @@ for item in timeline_items:
                 <div style="font-weight:700; direction:ltr; color:#E0A96D; font-size:0.95rem;">₪{item['amount']:,.1f}</div>
             </div>
             """, unsafe_allow_html=True)
-        with col_action:
-            with st.popover("עדכן"):
-                new_amt = st.number_input("סכום בפועל", value=float(item['amount']), key=f"p_{item['key']}")
-                if st.button("סמן כבוצע", key=f"b_{item['key']}"):
-                    st.session_state.added_transactions.append({
-                        date_col: datetime.now().strftime('%Y-%m-%d'),
-                        name_col: item['key'],
-                        amount_col: new_amt,
-                        type_col: "קבוע",
-                        cat_col: item['category']
-                    })
-                    st.rerun()
+        with col_btn:
+            if st.button("עדכן", key=f"btn_{item['key']}"):
+                edit_expense_dialog(item['key'], item['amount'], item['category'])
     else:
         st.markdown(f"""
         <div class="ledger-row" style="border-right: 3px solid #4ADE80;">
