@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-st.set_page_config(page_title="ניהול תקציב אישי", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="ניהול תקציב חכם", layout="centered", initial_sidebar_state="collapsed")
 
-# --- CSS מותאם ומדויק למובייל (RiseUp Style) ---
+# --- CSS עיצוב נקי וסגירת סרגל צד וקישורי מערכת ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap');
@@ -20,7 +20,18 @@ st.markdown("""
         color: #F8FAFC;
     }
     
-    /* לצמצום רווחים עליונים במובייל */
+    /* הסתרת סרגל צד, כותרות מיותרות וקישורי נגישות כמו Skip to main content */
+    [data-testid="stSidebar"] {
+        display: none;
+    }
+    [data-testid="collapsedControl"] {
+        display: none;
+    }
+    .skiptocontent, a.skiptocontent {
+        display: none !important;
+    }
+    
+    /* ריווח נקי למובייל */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 2rem !important;
@@ -95,7 +106,6 @@ st.markdown("""
     .status-paid { color: #4ADE80; }
     .status-pending { color: #FB923C; }
 
-    /* הקטנת כפתורי ה-Popover למובייל */
     div[data-testid="stPopover"] > button {
         padding: 2px 10px !important;
         font-size: 0.75rem !important;
@@ -152,7 +162,9 @@ if not df.empty:
 
     df['מחזור'] = df['parsed_date'].apply(get_billing_cycle)
     available_cycles = sorted(df['מחזור'].dropna().unique(), reverse=True)
-    selected_cycle = st.selectbox("📅 מחזור פעיל:", available_cycles if available_cycles else ["נוכחי"])
+    
+    # בורר מחזורים מעוצב בראש העמוד
+    selected_cycle = st.selectbox("📅 בחר מחזור תקציב:", available_cycles if available_cycles else ["נוכחי"])
     filtered_df = df[df['מחזור'] == selected_cycle]
 else:
     filtered_df = pd.DataFrame()
@@ -200,7 +212,28 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- 2. מעקב הוצאות קבועות ---
+# --- 2. כפתור הוספת עסקה מהירה נפתח במסך הראשי ---
+with st.expander("➕ הוסף עסקה חדשה"):
+    with st.form("main_add_tx"):
+        q_name = st.text_input("שם עסק")
+        q_amt = st.number_input("סכום (₪)", min_value=0.0)
+        q_type = st.selectbox("סוג", ["משתנה", "קבוע"])
+        q_cat = st.selectbox("קטגוריה", ["סופר ופארם", "רכב ותחבורה", "בילויים", "חיות", "שונות"])
+        if st.form_submit_button("שמור עסקה"):
+            if q_name and q_amt > 0:
+                st.session_state.added_transactions.append({
+                    date_col: datetime.now().strftime('%Y-%m-%d'),
+                    name_col: q_name,
+                    amount_col: q_amt,
+                    type_col: q_type,
+                    cat_col: q_cat
+                })
+                st.success("העסקה נוספה בהצלחה!")
+                st.rerun()
+
+st.divider()
+
+# --- 3. מעקב הוצאות קבועות ---
 st.subheader("📌 התחייבויות קבועות")
 
 for item_name, exp_amount in expected_fixed_expenses.items():
@@ -249,7 +282,7 @@ for item_name, exp_amount in expected_fixed_expenses.items():
 
 st.divider()
 
-# --- 3. עסקאות משתנות אחרונות ---
+# --- 4. עסקאות משתנות אחרונות ---
 st.subheader("🛍️ עסקאות משתנות אחרונות")
 if not variable_df.empty:
     for _, row in variable_df.tail(8).iterrows():
@@ -271,21 +304,3 @@ if not variable_df.empty:
         """, unsafe_allow_html=True)
 else:
     st.info("אין עסקאות משתנות במחזור זה.")
-
-# טופס להוספת עסקה מהירה בסרגל הצד
-with st.sidebar.form("add_tx"):
-    st.subheader("➕ הוספת עסקה")
-    q_name = st.text_input("שם עסק")
-    q_amt = st.number_input("סכום (₪)", min_value=0.0)
-    q_type = st.selectbox("סוג", ["משתנה", "קבוע"])
-    q_cat = st.selectbox("קטגוריה", ["סופר ופארם", "רכב ותחבורה", "בילויים", "חיות", "שונות"])
-    if st.form_submit_button("שמור"):
-        if q_name and q_amt > 0:
-            st.session_state.added_transactions.append({
-                date_col: datetime.now().strftime('%Y-%m-%d'),
-                name_col: q_name,
-                amount_col: q_amt,
-                type_col: q_type,
-                cat_col: q_cat
-            })
-            st.rerun()
