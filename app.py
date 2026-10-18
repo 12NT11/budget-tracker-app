@@ -140,12 +140,17 @@ if not df.empty:
     cat_col = next((col for col in df.columns if 'קטגוריה' in col), 'קטגוריה')
 
     df[amount_col] = pd.to_numeric(df[amount_col], errors='coerce').fillna(0)
-    # המרת תאריכים בצורה מדויקת לפי הפורמט הישראלי/בינלאומי
+    
+    # ניתוח תאריכים חסין שגיאות
     df['parsed_date'] = pd.to_datetime(df[date_col], errors='coerce', dayfirst=True)
+    if df['parsed_date'].isna().sum() > 0:
+        df['parsed_date'] = df['parsed_date'].fillna(pd.to_datetime(df[date_col], errors='coerce', format='mixed'))
+    df['parsed_date'] = df['parsed_date'].fillna(datetime.now())
 
     # לוגיקת מחזור מדויקת (10 עד 9)
     def get_billing_cycle(dt):
-        if pd.isna(dt): return "לא ידוע"
+        if pd.isna(dt): 
+            dt = datetime.now()
         if dt.day >= 10:
             start = dt.replace(day=10)
             end = dt.replace(year=dt.year + 1, month=1, day=9) if dt.month == 12 else dt.replace(month=dt.month + 1, day=9)
@@ -156,22 +161,32 @@ if not df.empty:
 
     df['מחזור'] = df['parsed_date'].apply(get_billing_cycle)
     
-    # חישוב המחזור הנוכחי האוטומטי להיום (לדוגמה אוקטובר 2026: 10/10/2026 - 09/11/2026)
-    today = datetime.now()
-    current_cycle_str = get_billing_cycle(today)
-
     available_cycles = sorted(df['מחזור'].dropna().unique(), reverse=True)
-    if current_cycle_str not in available_cycles:
-        available_cycles.insert(0, current_cycle_str)
+    today_cycle = get_billing_cycle(datetime.now())
+    
+    if today_cycle not in available_cycles:
+        available_cycles.insert(0, today_cycle)
+
+    # מציאת האינדקס של המחזור הנוכחי כדי שייבחר אוטומטית
+    default_index = 0
+    if today_cycle in available_cycles:
+        default_index = available_cycles.index(today_cycle)
 
     st.caption("📅 מחזור תקציב פעיל:")
-    selected_cycle = st.selectbox("בחירת מחזור", available_cycles, label_visibility="collapsed")
+    selected_cycle = st.selectbox("בחירת מחזור", available_cycles, index=default_index, label_visibility="collapsed")
     
     filtered_df = df[df['מחזור'] == selected_cycle]
 else:
     filtered_df = pd.DataFrame()
     amount_col, type_col, name_col, date_col, cat_col = 'סכום', 'סוג הוצאה', 'שם עסק', 'תאריך', 'קטגוריה'
-    selected_cycle = "10/10/2026 - 09/11/2026"
+    today = datetime.now()
+    if today.day >= 10:
+        s = today.replace(day=10)
+        e = (today.replace(year=today.year+1, month=1, day=9) if today.month == 12 else today.replace(month=today.month+1, day=9))
+    else:
+        e = today.replace(day=9)
+        s = (today.replace(year=today.year-1, month=12, day=10) if today.month == 1 else today.replace(month=today.month-1, day=10))
+    selected_cycle = f"{s.strftime('%d/%m/%Y')} - {e.strftime('%d/%m/%Y')}"
 
 expected_fixed_expenses = {
     "שכירות / משכנתא": 4500.0,
