@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from streamlit_gsheets import GSheetsConnection
 
 st.set_page_config(page_title="תקציב אישי", layout="centered")
 
@@ -48,20 +47,9 @@ st.markdown(
 
 st.title("💰 מעקב תקציב חודשי")
 
-# חיבור ל-Google Sheets לשליפה וכתיבה
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-@st.cache_data(ttl=5)
-def load_data():
-    try:
-        df = conn.read(ttl=5)
-        df.columns = df.columns.str.strip()
-        return df
-    except Exception:
-        # fallback לנתונים ריקים במקרה של שגיאה
-        return pd.DataFrame()
-
-df = load_data()
+# זיכרון מקומי לעסקאות שנוספו באפליקציה
+if 'added_transactions' not in st.session_state:
+    st.session_state.added_transactions = []
 
 if 'business_types' not in st.session_state:
     st.session_state.business_types = {
@@ -72,6 +60,27 @@ if 'business_types' not in st.session_state:
         "אינטרנט": "קבוע",
         "אושר עד": "משתנה"
     }
+
+# טעינת נתונים מקובץ ה-CSV של Google Sheets
+@st.cache_data(ttl=60)
+def load_data():
+    try:
+        sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        csv_url = sheet_url.split("/edit")[0] + "/export?format=csv" if "/edit" in sheet_url else sheet_url
+        df = pd.read_csv(csv_url)
+        df.columns = df.columns.str.strip()
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+base_df = load_data()
+
+# מיזוג הנתונים מהגיליון עם העסקאות החדשות שנוספו בסשן
+if st.session_state.added_transactions:
+    new_df = pd.DataFrame(st.session_state.added_transactions)
+    df = pd.concat([base_df, new_df], ignore_index=True) if not base_df.empty else new_df
+else:
+    df = base_df
 
 if not df.empty:
     amount_col = next((col for col in df.columns if 'סכום' in col), 'סכום')
@@ -134,21 +143,6 @@ unpaid_fixed_dict = {item: exp for item, exp in expected_fixed_expenses.items()
 unpaid_fixed_total = sum(unpaid_fixed_dict.values())
 true_remaining = estimated_income - (total_fixed_paid + total_variable + unpaid_fixed_total)
 
-# פונקציית שמירה ל-Google Sheets
-def append_to_gsheets(new_row_dict):
-    try:
-        updated_df = pd.concat([df, pd.DataFrame([new_row_dict])], ignore_index=True)
-        # ניקוי עמודות עזר לפני שמירה
-        for col in ['parsed_date', 'מחזור']:
-            if col in updated_df.columns:
-                updated_df.drop(columns=[col], inplace=True)
-        conn.update(data=updated_df)
-        st.cache_data.clear()
-        return True
-    except Exception as e:
-        st.error(f"שגיאה בשמירה ל-Google Sheets: {e}")
-        return False
-
 # --- תצוגת מסך הבית הקומפקטית ---
 
 # 1. מדדים אופקיים
@@ -174,24 +168,23 @@ for item_name, exp_amount in expected_fixed_expenses.items():
 
 st.dataframe(pd.DataFrame(fixed_rows), use_container_width=True, hide_index=True)
 
-# אזור עדכון הוצאה קבועה שירדה ושמירה קבועה בגיליון
+# אזור עדכון הוצאה קבועה שירדה
 with st.expander("➕ עדכן הוצאה קבועה שירדה"):
     with st.form("mark_fixed_form"):
         unpaid_items = list(unpaid_fixed_dict.keys())
         if unpaid_items:
             item_to_update = st.selectbox("בחר הוצאה", unpaid_items)
             updated_amt = st.number_input("סכום בפועל (₪)", value=float(unpaid_fixed_dict[item_to_update]))
-            if st.form_submit_button("סמן כמשולם ושמור בגיליון"):
-                new_row = {
+            if st.form_submit_button("סמן כמשולם"):
+                st.session_state.added_transactions.append({
                     date_col: datetime.now().strftime('%Y-%m-%d'),
                     name_col: item_to_update,
                     amount_col: updated_amt,
                     type_col: "קבוע",
                     cat_col: "חשבונות ודירה"
-                }
-                if append_to_gsheets(new_row):
-                    st.success("עודכן ונשמר ב-Google Sheets!")
-                    st.rerun()
+                })
+                st.success("עודכן!")
+                st.rerun()
         else:
             st.info("כל ההוצאות הקבועות למחזור זה כבר ירדו! 🎉")
 
@@ -210,16 +203,12 @@ category_targets = {
 
 if not variable_df.empty and cat_col in variable_df.columns:
     cat_totals = variable_df.groupby(cat_col)[amount_col].sum()
-    
-    # גרף עמודות קטן של התפלגות קטגוריות
     st.bar_chart(cat_totals)
     
-    # סרגלי התקדמות יעד תקציבי
     with st.expander("🎯 יעדי תקציב לקטגוריות משתנות"):
         for cat_name, target_val in category_targets.items():
             spent_val = float(cat_totals.get(cat_name, 0.0))
             pct = min(spent_val / target_val, 1.0) if target_val > 0 else 0.0
-            
             st.markdown(f"**{cat_name}**: ₪{spent_val:,.0f} / ₪{target_val:,.0f}")
             st.progress(pct)
             if spent_val > target_val:
@@ -242,22 +231,20 @@ if not variable_df.empty:
 else:
     st.caption("אין עסקאות משתנות רשומות למחזור זה.")
 
-# טופס צפי להוספת עסקה מהירה ישירות ל-Google Sheets
+# טופס להוספת עסקה מהירה בסרגל הצד
 with st.sidebar.form("quick_add"):
-    st.subheader("➕ הוספת עסקה לגיליון")
+    st.subheader("➕ הוספת עסקה")
     q_name = st.text_input("שם עסק")
     q_amt = st.number_input("סכום", min_value=0.0)
     q_type = st.selectbox("סוג", ["משתנה", "קבוע"])
-    q_cat = st.selectbox("קטגוריה", ["סופר ופארם", "רכב ותחבורה", "בילויים ומסעדות", "חשבונות ודירה", "חיות מחמד", "שונות"])
-    if st.form_submit_button("שמור ב-Google Sheets"):
+    q_cat = st.selectbox("קטגוריה", ["סופר ופארם", "רכב ותחבורה", "בילויים", "דיור", "חיות", "שונות"])
+    if st.form_submit_button("שמור"):
         if q_name and q_amt > 0:
-            new_row = {
+            st.session_state.added_transactions.append({
                 date_col: datetime.now().strftime('%Y-%m-%d'),
                 name_col: q_name,
                 amount_col: q_amt,
                 type_col: q_type,
                 cat_col: q_cat
-            }
-            if append_to_gsheets(new_row):
-                st.sidebar.success("העסקה נשמרה בגיליון!")
-                st.rerun()
+            })
+            st.rerun()
