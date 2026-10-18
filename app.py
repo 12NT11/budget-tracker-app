@@ -98,15 +98,25 @@ st.markdown("""
     .status-paid { color: #4ADE80; }
     .status-pending { color: #FB923C; }
 
+    /* עיצוב מעודן לכפתורי שנה&סמן */
+    div[data-testid="stPopover"] {
+        display: flex;
+        justify-content: flex-end;
+    }
     div[data-testid="stPopover"] > button {
-        padding: 2px 10px !important;
+        padding: 4px 12px !important;
         font-size: 0.75rem !important;
         min-height: 0px !important;
-        height: 28px !important;
+        height: 30px !important;
         border-radius: 8px !important;
         background-color: #334155 !important;
+        color: #38BDF8 !important;
+        border: 1px solid #475569 !important;
+        font-weight: 500;
+    }
+    div[data-testid="stPopover"] > button:hover {
+        background-color: #475569 !important;
         color: #F8FAFC !important;
-        border: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -132,6 +142,20 @@ if st.session_state.added_transactions:
     new_df = pd.DataFrame(st.session_state.added_transactions)
     df = pd.concat([df, new_df], ignore_index=True) if not df.empty else new_df
 
+# לוגיקת מחזור מדויקת (10 עד 9)
+def get_billing_cycle(dt):
+    if pd.isna(dt): 
+        dt = datetime.now()
+    if dt.day >= 10:
+        start = dt.replace(day=10)
+        end = dt.replace(year=dt.year + 1, month=1, day=9) if dt.month == 12 else dt.replace(month=dt.month + 1, day=9)
+    else:
+        end = dt.replace(day=9)
+        start = dt.replace(year=dt.year - 1, month=12, day=10) if dt.month == 1 else dt.replace(month=dt.month - 1, day=10)
+    return f"{start.strftime('%d/%m/%Y')} - {end.strftime('%d/%m/%Y')}"
+
+today_cycle = get_billing_cycle(datetime.now())
+
 if not df.empty:
     amount_col = next((col for col in df.columns if 'סכום' in col), 'סכום')
     type_col = next((col for col in df.columns if 'סוג' in col), 'סוג הוצאה')
@@ -141,52 +165,28 @@ if not df.empty:
 
     df[amount_col] = pd.to_numeric(df[amount_col], errors='coerce').fillna(0)
     
-    # ניתוח תאריכים חסין שגיאות
     df['parsed_date'] = pd.to_datetime(df[date_col], errors='coerce', dayfirst=True)
     if df['parsed_date'].isna().sum() > 0:
         df['parsed_date'] = df['parsed_date'].fillna(pd.to_datetime(df[date_col], errors='coerce', format='mixed'))
     df['parsed_date'] = df['parsed_date'].fillna(datetime.now())
 
-    # לוגיקת מחזור מדויקת (10 עד 9)
-    def get_billing_cycle(dt):
-        if pd.isna(dt): 
-            dt = datetime.now()
-        if dt.day >= 10:
-            start = dt.replace(day=10)
-            end = dt.replace(year=dt.year + 1, month=1, day=9) if dt.month == 12 else dt.replace(month=dt.month + 1, day=9)
-        else:
-            end = dt.replace(day=9)
-            start = dt.replace(year=dt.year - 1, month=12, day=10) if dt.month == 1 else dt.replace(month=dt.month - 1, day=10)
-        return f"{start.strftime('%d/%m/%Y')} - {end.strftime('%d/%m/%Y')}"
-
     df['מחזור'] = df['parsed_date'].apply(get_billing_cycle)
     
     available_cycles = sorted(df['מחזור'].dropna().unique(), reverse=True)
-    today_cycle = get_billing_cycle(datetime.now())
-    
-    if today_cycle not in available_cycles:
-        available_cycles.insert(0, today_cycle)
-
-    # מציאת האינדקס של המחזור הנוכחי כדי שייבחר אוטומטית
-    default_index = 0
     if today_cycle in available_cycles:
-        default_index = available_cycles.index(today_cycle)
+        available_cycles.remove(today_cycle)
+    available_cycles.insert(0, today_cycle)
 
     st.caption("📅 מחזור תקציב פעיל:")
-    selected_cycle = st.selectbox("בחירת מחזור", available_cycles, index=default_index, label_visibility="collapsed")
+    selected_cycle = st.selectbox("בחירת מחזור", available_cycles, index=0, label_visibility="collapsed")
     
     filtered_df = df[df['מחזור'] == selected_cycle]
 else:
     filtered_df = pd.DataFrame()
     amount_col, type_col, name_col, date_col, cat_col = 'סכום', 'סוג הוצאה', 'שם עסק', 'תאריך', 'קטגוריה'
-    today = datetime.now()
-    if today.day >= 10:
-        s = today.replace(day=10)
-        e = (today.replace(year=today.year+1, month=1, day=9) if today.month == 12 else today.replace(month=today.month+1, day=9))
-    else:
-        e = today.replace(day=9)
-        s = (today.replace(year=today.year-1, month=12, day=10) if today.month == 1 else today.replace(month=today.month-1, day=10))
-    selected_cycle = f"{s.strftime('%d/%m/%Y')} - {e.strftime('%d/%m/%Y')}"
+    selected_cycle = today_cycle
+    st.caption("📅 מחזור תקציב פעיל:")
+    st.selectbox("בחירת מחזור", [today_cycle], index=0, label_visibility="collapsed")
 
 expected_fixed_expenses = {
     "שכירות / משכנתא": 4500.0,
@@ -271,21 +271,20 @@ for item_name, exp_amount in expected_fixed_expenses.items():
         </div>
         """, unsafe_allow_html=True)
     else:
-        c_card, c_btn = st.columns([3, 1])
+        c_card, c_btn = st.columns([2.5, 1.5])
         with c_card:
             st.markdown(f"""
-            <div class="item-card">
+            <div class="item-card" style="margin-bottom:0; border:none; padding:4px 0;">
                 <div class="item-header">
                     <div>
                         <div class="item-title">🟠 {item_name}</div>
-                        <div class="item-sub">צפוי לרדת</div>
+                        <div class="item-sub">צפוי: ₪{exp_amount:,.1f}</div>
                     </div>
-                    <div class="item-amount status-pending">₪{exp_amount:,.1f}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
         with c_btn:
-            with st.popover("שנה&סמן"):
+            with st.popover("⚙️ שנה&סמן"):
                 new_amt = st.number_input("סכום בפועל", value=float(exp_amount), key=f"p_{item_name}")
                 if st.button("אישור", key=f"b_{item_name}"):
                     st.session_state.added_transactions.append({
