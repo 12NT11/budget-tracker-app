@@ -4,7 +4,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="ניהול תקציב חכם", layout="centered", initial_sidebar_state="collapsed")
 
-# --- CSS עיצוב מלוטש ומדויק בסגנון RiseUp ---
+# --- CSS עיצוב פינטק נקי ומודרני (Clean Fintech) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap');
@@ -31,11 +31,11 @@ st.markdown("""
         padding-right: 0.8rem !important;
     }
 
-    /* כרטיסיית יתרה ראשית (Hero) */
+    /* כרטיסיית יתרה ראשית */
     .hero-card {
         background: linear-gradient(135deg, #1C2541 0%, #0B132B 100%);
         border: 1px solid #3A506B;
-        border-radius: 20px;
+        border-radius: 16px;
         padding: 18px 14px;
         text-align: center;
         margin-bottom: 14px;
@@ -68,48 +68,24 @@ st.markdown("""
         margin-top: 2px;
     }
 
-    /* כרטיסיית קבוצה ראשית */
-    .group-card {
+    /* שורת פריט בציר הזמן הכרונולוגי */
+    .ledger-row {
         background-color: #1C2541;
-        border-radius: 14px;
-        padding: 12px 16px;
+        border-radius: 12px;
+        padding: 10px 14px;
         margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         border: 1px solid #3A506B;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
     }
-    .group-title {
-        font-weight: 600;
-        font-size: 0.95rem;
-        color: #F8FAFC;
-    }
-    .group-amounts {
-        font-size: 0.9rem;
-        direction: ltr;
-        color: #48CAE4;
-        font-weight: 700;
-    }
-
-    /* שורת פריט בודד נקי בתוך פירוט */
-    .item-row {
-        background-color: #0F172A;
-        border-radius: 10px;
-        padding: 10px 12px;
-        margin-bottom: 6px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border: 1px solid #1E293B;
-    }
-
-    /* יישור כפתורי popover בצורה אלגנטית */
+    
     div[data-testid="stPopover"] > button {
-        padding: 2px 10px !important;
-        font-size: 0.72rem !important;
+        padding: 2px 8px !important;
+        font-size: 0.7rem !important;
         min-height: 0px !important;
-        height: 30px !important;
-        border-radius: 8px !important;
+        height: 28px !important;
+        border-radius: 6px !important;
         background-color: #3A506B !important;
         color: #48CAE4 !important;
         border: none !important;
@@ -139,7 +115,7 @@ if st.session_state.added_transactions:
     new_df = pd.DataFrame(st.session_state.added_transactions)
     df = pd.concat([df, new_df], ignore_index=True) if not df.empty else new_df
 
-# לוגיקת מחזור מדויקת (10 עד 9)
+# לוגיקת מחזור (10 עד 9)
 def get_billing_cycle(dt):
     if pd.isna(dt): 
         dt = datetime.now()
@@ -149,9 +125,9 @@ def get_billing_cycle(dt):
     else:
         end = dt.replace(day=9)
         start = dt.replace(year=dt.year - 1, month=12, day=10) if dt.month == 1 else dt.replace(month=dt.month - 1, day=10)
-    return f"{start.strftime('%d/%m/%Y')} - {end.strftime('%d/%m/%Y')}"
+    return start, end, f"{start.strftime('%d/%m/%Y')} - {end.strftime('%d/%m/%Y')}"
 
-today_cycle = get_billing_cycle(datetime.now())
+start_dt, end_dt, today_cycle = get_billing_cycle(datetime.now())
 
 if not df.empty:
     amount_col = next((col for col in df.columns if 'סכום' in col), 'סכום')
@@ -167,7 +143,11 @@ if not df.empty:
         df['parsed_date'] = df['parsed_date'].fillna(pd.to_datetime(df[date_col], errors='coerce', format='mixed'))
     df['parsed_date'] = df['parsed_date'].fillna(datetime.now())
 
-    df['מחזור'] = df['parsed_date'].apply(get_billing_cycle)
+    def assign_cycle(d):
+        s, e, c_str = get_billing_cycle(d)
+        return c_str
+    
+    df['מחזור'] = df['parsed_date'].apply(assign_cycle)
     
     available_cycles = sorted(df['מחזור'].dropna().unique(), reverse=True)
     if today_cycle in available_cycles:
@@ -185,13 +165,15 @@ else:
     st.caption("📅 מחזור תקציב פעיל:")
     st.selectbox("בחירת מחזור", [today_cycle], index=0, label_visibility="collapsed")
 
-# רשימת הוצאות קבועות צפויות (ללא כפילויות)
+# הוצאות קבועות צפויות
+next_month = start_dt.replace(year=start_dt.year + 1, month=1) if start_dt.month == 12 else start_dt.replace(month=start_dt.month + 1)
+
 expected_fixed_expenses = {
-    "שכירות / משכנתא": 4500.0,
-    "סולמייט (חיות)": 857.0,
-    "עירית בני ברק": 541.6,
-    "חשמל": 350.0,
-    "אינטרנט וטלפון": 150.0
+    "שכירות / משכנתא": {"amount": 4500.0, "day": 25, "cat": "דיור"},
+    "סולמייט (חיות)": {"amount": 857.0, "day": 28, "cat": "חיות מחמד"},
+    "עירית בני ברק": {"amount": 541.6, "day": 1, "cat": "מיסים", "month_offset": 1},
+    "חשמל": {"amount": 350.0, "day": 1, "cat": "תשתיות", "month_offset": 1},
+    "אינטרנט וטלפון": {"amount": 150.0, "day": 5, "cat": "תקשורת", "month_offset": 1}
 }
 
 estimated_income = 17750.0
@@ -206,28 +188,31 @@ else:
     fixed_paid_df, variable_df = pd.DataFrame(), pd.DataFrame()
 
 paid_names = fixed_paid_df[name_col].tolist() if not fixed_paid_df.empty else []
-unpaid_fixed_dict = {item: exp for item, exp in expected_fixed_expenses.items() 
-                     if not any(p_name in item or item in str(p_name) for p_name in paid_names)}
 
-unpaid_fixed_total = sum(unpaid_fixed_dict.values())
+unpaid_fixed_dict = {}
+for item_name, info in expected_fixed_expenses.items():
+    if not any(p_name in item_name or item_name in str(p_name) for p_name in paid_names):
+        unpaid_fixed_dict[item_name] = info
+
+unpaid_fixed_total = sum([info["amount"] for info in unpaid_fixed_dict.values()])
 true_remaining = estimated_income - (total_fixed_paid + total_variable + unpaid_fixed_total)
 
-# --- 1. כרטיסיית HERO הראשית (RiseUp Style) ---
+# --- 1. כרטיסיית HERO הראשית ---
 st.markdown(f"""
 <div class="hero-card">
-    <div class="hero-title">💎 יתרה פנויה אמיתית להוצאות</div>
+    <div class="hero-title">יתרה פנויה להוצאות</div>
     <div class="hero-amount">₪{true_remaining:,.2f}</div>
     <div class="hero-stats">
         <div>הכנסה<span class="hero-stat-val">₪{estimated_income:,.0f}</span></div>
         <div>משתנות<span class="hero-stat-val">₪{total_variable:,.0f}</span></div>
         <div>קבועות שירדו<span class="hero-stat-val">₪{total_fixed_paid:,.0f}</span></div>
-        <div>משוריין בקנה<span class="hero-stat-val" style="color:#FB923C;">₪{unpaid_fixed_total:,.0f}</span></div>
+        <div>בקנה (צפוי)<span class="hero-stat-val" style="color:#E0A96D;">₪{unpaid_fixed_total:,.0f}</span></div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # --- 2. כפתור הוספת עסקה מהירה ---
-with st.expander("➕ הוסף עסקה חדשה למחזור"):
+with st.expander("➕ הוספת עסקה חדשה למחזור"):
     with st.form("main_add_tx"):
         q_name = st.text_input("שם עסק")
         q_amt = st.number_input("סכום (₪)", min_value=0.0)
@@ -247,79 +232,82 @@ with st.expander("➕ הוסף עסקה חדשה למחזור"):
 
 st.divider()
 
-# --- 3. התחייבויות קבועות (עם פס התקדמות) ---
-total_expected_fixed = sum(expected_fixed_expenses.values())
-fixed_progress = min(1.0, total_fixed_paid / total_expected_fixed) if total_expected_fixed > 0 else 0
+# --- 3. ציר זמן תזרימי אחיד (Chronological Ledger) ---
+st.markdown("### **תזרימי מחזור (לפי תאריך)**")
 
-st.markdown(f"""
-<div class="group-card">
-    <span class="group-title">📌 התחייבויות קבועות</span>
-    <span class="group-amounts">₪{total_fixed_paid:,.0f} / ₪{total_expected_fixed:,.0f}</span>
-</div>
-""", unsafe_allow_html=True)
-st.progress(fixed_progress)
+timeline_items = []
 
-# פירוט הקבועות
-with st.expander("🔍 פירוט הוצאות קבועות ועדכון סטטוס"):
-    for item_name, exp_amount in expected_fixed_expenses.items():
-        is_paid = item_name not in unpaid_fixed_dict
-        if is_paid:
-            actual_row = fixed_paid_df[fixed_paid_df[name_col].astype(str).str.contains(item_name, na=False)]
-            amt = actual_row[amount_col].values[0] if not actual_row.empty else exp_amount
+# הוספת קבועות עתידיות
+for item_name, info in unpaid_fixed_dict.items():
+    d_val = info["day"]
+    m_val = next_month.month if info.get("month_offset", 0) == 1 else start_dt.month
+    y_val = next_month.year if info.get("month_offset", 0) == 1 and m_val == 1 else start_dt.year
+    try:
+        item_date = datetime(y_val, m_val, d_val)
+    except:
+        item_date = start_dt
+        
+    timeline_items.append({
+        "date": item_date,
+        "date_str": item_date.strftime('%d/%m/%Y'),
+        "name": item_name,
+        "category": info["cat"],
+        "amount": info["amount"],
+        "status": "pending",
+        "key": item_name
+    })
+
+# הוספת עסקאות קיימות
+if not filtered_df.empty:
+    for _, row in filtered_df.iterrows():
+        p_date = row['parsed_date']
+        timeline_items.append({
+            "date": p_date,
+            "date_str": pd.to_datetime(p_date).strftime('%d/%m/%Y') if pd.notna(p_date) else "",
+            "name": str(row[name_col]),
+            "category": str(row.get(cat_col, 'כללי')),
+            "amount": float(row[amount_col]),
+            "status": "done",
+            "key": str(row[name_col]) + str(row[amount_col])
+        })
+
+# מיון כרונולוגי
+timeline_items.sort(key=lambda x: x["date"])
+
+for item in timeline_items:
+    if item["status"] == "pending":
+        col_info, col_action = st.columns([3, 1])
+        with col_info:
             st.markdown(f"""
-            <div class="item-row">
-                <div>🟢 <b>{item_name}</b> <span style="font-size:0.75rem; color:#4ADE80;">(ירד החודש)</span></div>
-                <div style="font-weight:700; direction:ltr; color:#4ADE80;">₪{amt:,.1f}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            col_txt, col_btn = st.columns([2.5, 1.5])
-            with col_txt:
-                st.markdown(f"""
-                <div style="padding-top:4px;">
-                    🟠 <b>{item_name}</b> <br>
-                    <span style="font-size:0.75rem; color:#FB923C;">צפוי: ₪{exp_amount:,.1f}</span>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_btn:
-                with st.popover("שנה&סמן"):
-                    new_amt = st.number_input("סכום בפועל", value=float(exp_amount), key=f"p_{item_name}")
-                    if st.button("אישור", key=f"b_{item_name}"):
-                        st.session_state.added_transactions.append({
-                            date_col: datetime.now().strftime('%Y-%m-%d'),
-                            name_col: item_name,
-                            amount_col: new_amt,
-                            type_col: "קבוע",
-                            cat_col: "חשבונות ודירה"
-                        })
-                        st.rerun()
-
-st.divider()
-
-# --- 4. הוצאות משתנות (שוטפות) ---
-st.markdown(f"""
-<div class="group-card">
-    <span class="group-title">🛍️ הוצאות משתנות (שוטפות)</span>
-    <span class="group-amounts">סה"כ: ₪{total_variable:,.0f}</span>
-</div>
-""", unsafe_allow_html=True)
-
-with st.expander("🔍 פירוט עסקאות משתנות אחרונות"):
-    if not variable_df.empty:
-        for _, row in variable_df.tail(10).iterrows():
-            t_date = pd.to_datetime(row['parsed_date']).strftime('%d/%m') if pd.notna(row['parsed_date']) else ""
-            c_name = str(row[name_col])
-            c_cat = str(row.get(cat_col, 'משתנה'))
-            amt_val = float(row[amount_col])
-            
-            st.markdown(f"""
-            <div class="item-row">
+            <div class="ledger-row" style="border-right: 3px solid #E0A96D;">
                 <div>
-                    <div style="font-weight:600;">{c_name}</div>
-                    <div style="font-size:0.72rem; color:#94A3B8;">{t_date} • {c_cat}</div>
+                    <div style="font-size:0.75rem; color:#94A3B8;">{item['date_str']} • ממתין</div>
+                    <div style="font-weight:600; font-size:0.95rem; margin-top:2px;">{item['name']}</div>
+                    <div style="font-size:0.75rem; color:#64748B;">{item['category']}</div>
                 </div>
-                <div style="font-weight:700; direction:ltr;">₪{amt_val:,.1f}</div>
+                <div style="font-weight:700; direction:ltr; color:#E0A96D; font-size:0.95rem;">₪{item['amount']:,.1f}</div>
             </div>
             """, unsafe_allow_html=True)
+        with col_action:
+            with st.popover("עדכן"):
+                new_amt = st.number_input("סכום בפועל", value=float(item['amount']), key=f"p_{item['key']}")
+                if st.button("סמן כבוצע", key=f"b_{item['key']}"):
+                    st.session_state.added_transactions.append({
+                        date_col: datetime.now().strftime('%Y-%m-%d'),
+                        name_col: item['key'],
+                        amount_col: new_amt,
+                        type_col: "קבוע",
+                        cat_col: item['category']
+                    })
+                    st.rerun()
     else:
-        st.info("אין עסקאות משתנות במחזור זה.")
+        st.markdown(f"""
+        <div class="ledger-row" style="border-right: 3px solid #4ADE80;">
+            <div>
+                <div style="font-size:0.75rem; color:#94A3B8;">{item['date_str']} • בוצע</div>
+                <div style="font-weight:600; font-size:0.95rem; margin-top:2px;">{item['name']}</div>
+                <div style="font-size:0.75rem; color:#64748B;">{item['category']}</div>
+            </div>
+            <div style="font-weight:700; direction:ltr; color:#F8FAFC; font-size:0.95rem;">₪{item['amount']:,.1f}</div>
+        </div>
+        """, unsafe_allow_html=True)
