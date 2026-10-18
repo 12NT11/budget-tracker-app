@@ -68,27 +68,21 @@ st.markdown("""
         margin-top: 2px;
     }
 
-    /* שורת פריט בציר הזמן הכרונולוגי */
-    .ledger-row {
-        background-color: #1C2541;
-        border-radius: 12px;
-        padding: 10px 14px;
-        margin-bottom: 8px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border: 1px solid #3A506B;
-    }
-    
-    /* עיצוב כפתורי פעולה רגילים */
+    /* עיצוב כפתורים שנראים כמו כרטיסייה לחיצה */
     .stButton > button {
-        border-radius: 8px !important;
-        background-color: #3A506B !important;
-        color: #48CAE4 !important;
-        border: none !important;
-        font-weight: 600 !important;
-        font-size: 0.8rem !important;
+        background-color: #1C2541 !important;
+        border: 1px solid #3A506B !important;
+        border-radius: 12px !important;
+        color: #F8FAFC !important;
+        text-align: right !important;
         width: 100% !important;
+        padding: 12px 14px !important;
+        font-family: 'Rubik', sans-serif !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    .stButton > button:hover {
+        border-color: #48CAE4 !important;
+        background-color: #23304E !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -293,24 +287,13 @@ timeline_items.sort(key=lambda x: x["date"])
 
 for item in timeline_items:
     if item["status"] == "pending":
-        col_info, col_btn = st.columns([3, 1])
-        with col_info:
-            st.markdown(f"""
-            <div class="ledger-row" style="border-right: 3px solid #E0A96D;">
-                <div>
-                    <div style="font-size:0.75rem; color:#94A3B8;">{item['date_str']} • ממתין</div>
-                    <div style="font-weight:600; font-size:0.95rem; margin-top:2px;">{item['name']}</div>
-                    <div style="font-size:0.75rem; color:#64748B;">{item['category']}</div>
-                </div>
-                <div style="font-weight:700; direction:ltr; color:#E0A96D; font-size:0.95rem;">₪{item['amount']:,.1f}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col_btn:
-            if st.button("עדכן", key=f"btn_{item['key']}"):
-                edit_expense_dialog(item['key'], item['amount'], item['category'])
+        # כרטיסייה שהיא כפתור לחיץ בפני עצמה שפותח את הדיאלוג
+        btn_label = f"⏳ {item['date_str']}  |  {item['name']}  ({item['category']})  —  ₪{item['amount']:,.1f}"
+        if st.button(btn_label, key=f"card_{item['key']}"):
+            edit_expense_dialog(item['key'], item['amount'], item['category'])
     else:
         st.markdown(f"""
-        <div class="ledger-row" style="border-right: 3px solid #4ADE80;">
+        <div style="background-color: #1C2541; border: 1px solid #3A506B; border-right: 3px solid #4ADE80; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <div style="font-size:0.75rem; color:#94A3B8;">{item['date_str']} • בוצע</div>
                 <div style="font-weight:600; font-size:0.95rem; margin-top:2px;">{item['name']}</div>
