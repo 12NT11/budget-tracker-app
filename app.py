@@ -4,7 +4,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="ניהול תקציב חכם", layout="centered", initial_sidebar_state="collapsed")
 
-# --- CSS עיצוב נקי וסגירת סרגל צד וקישורי מערכת ---
+# --- CSS עיצוב נקי ומהודק למובייל ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap');
@@ -20,20 +20,12 @@ st.markdown("""
         color: #F8FAFC;
     }
     
-    /* הסתרת סרגל צד, כותרות מיותרות וקישורי נגישות כמו Skip to main content */
-    [data-testid="stSidebar"] {
-        display: none;
-    }
-    [data-testid="collapsedControl"] {
-        display: none;
-    }
-    .skiptocontent, a.skiptocontent {
+    [data-testid="stSidebar"], [data-testid="collapsedControl"], .skiptocontent, a.skiptocontent {
         display: none !important;
     }
     
-    /* ריווח נקי למובייל */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0.8rem !important;
         padding-bottom: 2rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
@@ -44,29 +36,29 @@ st.markdown("""
         background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
         border: 1px solid #334155;
         border-radius: 16px;
-        padding: 16px 12px;
+        padding: 14px 10px;
         text-align: center;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
         box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.4);
     }
     .hero-title {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: #94A3B8;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
     .hero-amount {
-        font-size: 2.0rem;
+        font-size: 1.9rem;
         font-weight: 700;
         color: #38BDF8;
         direction: ltr;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
     .hero-stats {
         display: flex;
         justify-content: space-between;
         border-top: 1px solid #334155;
-        padding-top: 10px;
-        font-size: 0.75rem;
+        padding-top: 8px;
+        font-size: 0.72rem;
     }
     .hero-stat-val {
         font-weight: 600;
@@ -148,8 +140,10 @@ if not df.empty:
     cat_col = next((col for col in df.columns if 'קטגוריה' in col), 'קטגוריה')
 
     df[amount_col] = pd.to_numeric(df[amount_col], errors='coerce').fillna(0)
-    df['parsed_date'] = pd.to_datetime(df[date_col], errors='coerce')
+    # המרת תאריכים בצורה מדויקת לפי הפורמט הישראלי/בינלאומי
+    df['parsed_date'] = pd.to_datetime(df[date_col], errors='coerce', dayfirst=True)
 
+    # לוגיקת מחזור מדויקת (10 עד 9)
     def get_billing_cycle(dt):
         if pd.isna(dt): return "לא ידוע"
         if dt.day >= 10:
@@ -158,18 +152,26 @@ if not df.empty:
         else:
             end = dt.replace(day=9)
             start = dt.replace(year=dt.year - 1, month=12, day=10) if dt.month == 1 else dt.replace(month=dt.month - 1, day=10)
-        return f"{start.strftime('%d/%m')} - {end.strftime('%d/%m/%Y')}"
+        return f"{start.strftime('%d/%m/%Y')} - {end.strftime('%d/%m/%Y')}"
 
     df['מחזור'] = df['parsed_date'].apply(get_billing_cycle)
-    available_cycles = sorted(df['מחזור'].dropna().unique(), reverse=True)
     
-    # בורר מחזורים מעוצב בראש העמוד
-    selected_cycle = st.selectbox("📅 בחר מחזור תקציב:", available_cycles if available_cycles else ["נוכחי"])
+    # חישוב המחזור הנוכחי האוטומטי להיום (לדוגמה אוקטובר 2026: 10/10/2026 - 09/11/2026)
+    today = datetime.now()
+    current_cycle_str = get_billing_cycle(today)
+
+    available_cycles = sorted(df['מחזור'].dropna().unique(), reverse=True)
+    if current_cycle_str not in available_cycles:
+        available_cycles.insert(0, current_cycle_str)
+
+    st.caption("📅 מחזור תקציב פעיל:")
+    selected_cycle = st.selectbox("בחירת מחזור", available_cycles, label_visibility="collapsed")
+    
     filtered_df = df[df['מחזור'] == selected_cycle]
 else:
     filtered_df = pd.DataFrame()
     amount_col, type_col, name_col, date_col, cat_col = 'סכום', 'סוג הוצאה', 'שם עסק', 'תאריך', 'קטגוריה'
-    selected_cycle = "10/09 - 09/10/2026"
+    selected_cycle = "10/10/2026 - 09/11/2026"
 
 expected_fixed_expenses = {
     "שכירות / משכנתא": 4500.0,
@@ -212,7 +214,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- 2. כפתור הוספת עסקה מהירה נפתח במסך הראשי ---
+# --- 2. כפתור הוספת עסקה מהירה ---
 with st.expander("➕ הוסף עסקה חדשה"):
     with st.form("main_add_tx"):
         q_name = st.text_input("שם עסק")
