@@ -11,20 +11,35 @@ st.markdown(
     div.block-container {
         direction: rtl;
         text-align: right;
-        padding-top: 1rem;
+        padding-top: 0.5rem;
         padding-bottom: 1rem;
+    }
+    h1 {
+        font-size: 1.6rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    h3 {
+        font-size: 1.2rem !important;
+        margin-top: 1rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    /* התאמת מדדים לתצוגה אופקית במובייל */
+    div[data-testid="stHorizontalBlock"] > div {
+        flex: 1 1 0px !important;
+        min-width: 0px !important;
     }
     .stMetric {
         background-color: #1e222d;
         border-radius: 8px;
-        padding: 8px 12px;
+        padding: 6px 8px !important;
         text-align: center;
     }
     .stMetric label {
-        font-size: 0.85rem !important;
+        font-size: 0.75rem !important;
+        white-space: nowrap;
     }
     .stMetric div[data-testid="stMetricValue"] {
-        font-size: 1.2rem !important;
+        font-size: 1.0rem !important;
     }
     </style>
     """,
@@ -47,7 +62,7 @@ if 'business_types' not in st.session_state:
         "אושר עד": "משתנה"
     }
 
-# טעינת נתונים
+# טעינת נתונים מ-Google Sheets
 @st.cache_data(ttl=60)
 def load_data():
     try:
@@ -130,31 +145,30 @@ true_remaining = estimated_income - (total_fixed_paid + total_variable + unpaid_
 
 # --- תצוגת מסך הבית הקומפקטית ---
 
-# 1. שורת מדדים קומפקטית (3 משבצות בלבד בשורה אחת)
+# 1. שורת מדדים קומפקטית בשורה אחת
 m1, m2, m3 = st.columns(3)
-m1.metric("💎 יתרה פנויה", f"₪{true_remaining:,.0f}")
+m1.metric("💎 יתרה", f"₪{true_remaining:,.0f}")
 m2.metric("🛍️ משתנות", f"₪{total_variable:,.0f}")
 m3.metric("⏳ בקנה", f"₪{unpaid_fixed_total:,.0f}")
 
 st.divider()
 
-# 2. הוצאות קבועות בטבלאות נקיות וקצרות
+# 2. הוצאות קבועות בטבלה
 st.subheader("📌 הוצאות קבועות")
 
-# בניית נתוני קבועות קומפקטיים
 fixed_rows = []
 for item_name, exp_amount in expected_fixed_expenses.items():
     is_paid = item_name not in unpaid_fixed_dict
     if is_paid:
         actual_row = fixed_paid_df[fixed_paid_df[name_col].astype(str).str.contains(item_name, na=False)]
         amt = actual_row[amount_col].values[0] if not actual_row.empty else exp_amount
-        fixed_rows.append({"סטטוס": "🟢 ירד", "שם עסק": item_name, "סכום": f"₪{amt:,.1f}"})
+        fixed_rows.append({"סכום": f"₪{amt:,.1f}", "שם עסק": item_name, "סטטוס": "🟢 ירד"})
     else:
-        fixed_rows.append({"סטטוס": "🟠 ממתין", "שם עסק": item_name, "סכום": f"₪{exp_amount:,.1f}"})
+        fixed_rows.append({"סכום": f"₪{exp_amount:,.1f}", "שם עסק": item_name, "סטטוס": "🟠 ממתין"})
 
 st.dataframe(pd.DataFrame(fixed_rows), use_container_width=True, hide_index=True)
 
-# אזור עדכון הוצאה קבועה קטן ומרוכז בתחתית (בלי לחצנים לכל שורה)
+# אזור עדכון הוצאה קבועה שירדה
 with st.expander("➕ עדכן הוצאה קבועה שירדה"):
     with st.form("mark_fixed_form"):
         unpaid_items = list(unpaid_fixed_dict.keys())
@@ -176,7 +190,7 @@ with st.expander("➕ עדכן הוצאה קבועה שירדה"):
 
 st.divider()
 
-# 3. עסקאות משתנות נקיות
+# 3. עסקאות משתנות
 st.subheader("🛍️ עסקאות משתנות במחזור")
 if not variable_df.empty:
     display_var = variable_df.copy()
@@ -189,7 +203,7 @@ if not variable_df.empty:
 else:
     st.caption("אין עסקאות משתנות רשומות למחזור זה.")
 
-# טופס צף/צדי להוספת עסקה מהירה
+# טופס להוספת עסקה מהירה בסרגל הצד
 with st.sidebar.form("quick_add"):
     st.subheader("➕ הוספת עסקה")
     q_name = st.text_input("שם עסק")
