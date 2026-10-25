@@ -1,10 +1,10 @@
-﻿name: Nightly Transaction Sync
+﻿name: Financy Morning Sync
 
 on:
   schedule:
-    # Run at 7:00 AM UTC every day (after Financy morning refresh)
+    # הרצה אוטומטית בכל יום ב-07:00 בבוקר UTC (לאחר הרענון של Financy)
     - cron: "0 7 * * *"
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch: # מאפשר הרצה ידנית בלחיצת כפתור
 
 jobs:
   sync-transactions:
@@ -25,34 +25,18 @@ jobs:
         working-directory: ./server
         run: npm ci
 
-      - name: Run scraper and sync to Supabase
+      - name: Install Playwright Browsers
+        working-directory: ./server
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Financy Sync
         working-directory: ./server
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          CARD_PROVIDERS: ${{ secrets.CARD_PROVIDERS }}
-          # Isracard/Amex
-          ISRACARD_ID: ${{ secrets.ISRACARD_ID }}
-          ISRACARD_CARD6DIGITS: ${{ secrets.ISRACARD_CARD6DIGITS }}
-          ISRACARD_PASSWORD: ${{ secrets.ISRACARD_PASSWORD }}
-          AMEX_ID: ${{ secrets.AMEX_ID }}
-          AMEX_CARD6DIGITS: ${{ secrets.AMEX_CARD6DIGITS }}
-          AMEX_PASSWORD: ${{ secrets.AMEX_PASSWORD }}
-          # Max
-          MAX_USERNAME: ${{ secrets.MAX_USERNAME }}
-          MAX_PASSWORD: ${{ secrets.MAX_PASSWORD }}
-          # Other banks
-          HAPOALIM_USERNAME: ${{ secrets.HAPOALIM_USERNAME }}
-          HAPOALIM_PASSWORD: ${{ secrets.HAPOALIM_PASSWORD }}
-          LEUMI_USERNAME: ${{ secrets.LEUMI_USERNAME }}
-          LEUMI_PASSWORD: ${{ secrets.LEUMI_PASSWORD }}
-          PEPPER_USERNAME: ${{ secrets.PEPPER_USERNAME }}
-          PEPPER_PASSWORD: ${{ secrets.PEPPER_PASSWORD }}
-          # Fallback
-          CARD_USERNAME: ${{ secrets.CARD_USERNAME }}
-          CARD_PASSWORD: ${{ secrets.CARD_PASSWORD }}
+          FINANCY_STORAGE_STATE: ${{ secrets.FINANCY_STORAGE_STATE }}
         run: node sync-financy.js
 
       - name: Notify on failure
         if: failure()
-        run: echo "Nightly sync failed. Please check the logs."
+        run: echo "Financy sync failed. Please check the logs."
