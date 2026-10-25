@@ -111,27 +111,20 @@ async function syncFinancyToSupabase() {
 
     // מיפוי הנתונים למבנה של Supabase
     const formattedTransactions = transactions.map((t) => ({
-      id:
-        t.transactionId ||
-        `${t.valueDate?.value || t.date}_${t.chargedAmount || t.amount}_${t.description}`,
-      transactionId: t.transactionId || null,
-      accountId: t.accountId || null,
-      accountNumber: t.accountNumber || null,
-      providerId: t.providerId || null,
-      bookingDate: t.bookingDate || null,
-      transactionDate: t.transactionDate || null,
-      valueDate: t.valueDate || null,
-      chargedAmount:
-        t.chargedAmount !== undefined
-          ? t.chargedAmount
-          : t.originalAmount || t.amount || 0,
-      chargedCurrency: t.chargedCurrency || "ILS",
-      originalAmount: t.originalAmount || null,
-      originalCurrency: t.originalCurrency || null,
+      id: t.transactionId,
+      account_id: t.accountId || null,
+      account_number: t.accountNumber || null,
+      provider_id: t.providerId || null,
+      booking_date: t.bookingDate?.value || t.bookingDate || null,
+      transaction_date: t.transactionDate?.value || t.transactionDate || null,
+      value_date: t.valueDate?.value || t.valueDate || null,
+      charged_amount: t.chargedAmount ?? null,
+      charged_currency: t.chargedCurrency || null,
+      original_amount: t.originalAmount ?? null,
+      original_currency: t.originalCurrency || null,
       description: t.description || "",
-      merchantName: t.merchantName || null,
-      mainCategory: t.mainCategory || null,
-      subCategory: t.subCategory || null,
+      main_category: t.mainCategory || null,
+      sub_category: t.subCategory || null,
       status: t.status || null,
       raw_data: t,
       updated_at: new Date().toISOString(),
@@ -140,7 +133,7 @@ async function syncFinancyToSupabase() {
     console.log("💾 מעדכן את מסד הנתונים ב-Supabase...");
     const { error } = await supabase
       .from("transactions")
-      .upsert(formattedTransactions, { onConflict: "transactionId" });
+      .upsert(formattedTransactions, { onConflict: "id" });
 
     if (error) {
       throw error;

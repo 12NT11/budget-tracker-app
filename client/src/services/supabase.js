@@ -19,22 +19,22 @@ export async function fetchTransactions(filters = {}) {
     let query = supabase
       .from('transactions')
       .select('*')
-      .order('valueDate', { ascending: false })
+      .order('value_date', { ascending: false })
 
-    if (filters.providerId) {
-      query = query.eq('providerId', filters.providerId)
+    if (filters.provider_id) {
+      query = query.eq('provider_id', filters.provider_id)
     }
 
     if (filters.startDate) {
-      query = query.gte('valueDate', filters.startDate)
+      query = query.gte('value_date', filters.startDate)
     }
 
     if (filters.endDate) {
-      query = query.lte('valueDate', filters.endDate)
+      query = query.lte('value_date', filters.endDate)
     }
 
     if (filters.category) {
-      query = query.eq('subCategory', filters.category)
+      query = query.eq('sub_category', filters.category)
     }
 
     const { data, error } = await query
@@ -59,12 +59,12 @@ export async function getProviders() {
   try {
     const { data, error } = await supabase
       .from('transactions')
-      .select('providerId')
-      .not('providerId', 'is', null)
+      .select('provider_id')
+      .not('provider_id', 'is', null)
 
     if (error) throw error
 
-    const providers = [...new Set(data.map(item => item.providerId))]
+    const providers = [...new Set(data.map(item => item.provider_id))]
     return providers
   } catch (error) {
     console.error('Failed to fetch providers:', error)
@@ -80,12 +80,12 @@ export async function getCategories() {
   try {
     const { data, error } = await supabase
       .from('transactions')
-      .select('subCategory, mainCategory')
-      .not('subCategory', 'is', null)
+      .select('sub_category, main_category')
+      .not('sub_category', 'is', null)
 
     if (error) throw error
 
-    const categories = [...new Set(data.map(item => item.subCategory || item.mainCategory))]
+    const categories = [...new Set(data.map(item => item.sub_category || item.main_category))]
     return categories
   } catch (error) {
     console.error('Failed to fetch categories:', error)
