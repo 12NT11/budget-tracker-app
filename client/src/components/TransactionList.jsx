@@ -1,8 +1,12 @@
-﻿import React from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
+import {
+  RECURRING_EXPENSES,
+  generateRecurringTransactions,
+} from '../data/recurringExpenses';
 
-const items = [
-  { desc: ' ипотека', amount: '₪4,500.0', date: '12 אוק', cat: 'דיור', status: 'cleared' },
-  { desc: 'WOLT', amount: '₪143.0', date: '10 אוק', cat: 'מזון', status: 'pending' },
+const baseItems = [
+  { id: 'tx-1', desc: ' משכנתא', amount: '₪4,500.0', date: '12 אוק', cat: 'דיור', status: 'cleared', sortDate: new Date(2026, 9, 12).getTime() },
+  { id: 'tx-2', desc: 'WOLT', amount: '₪143.0', date: '10 אוק', cat: 'מזון', status: 'pending', sortDate: new Date(2026, 9, 10).getTime() },
 ];
 
 const TransactionCard = ({ item }) => {
@@ -25,16 +29,34 @@ const TransactionCard = ({ item }) => {
   );
 };
 
-const TransactionList = () => (
-  <div>
-    <div className="flex justify-between items-center mb-3">
-      <button className="bg-sky-500/10 text-sky-400 text-xs px-3 py-1.5 rounded-xl border border-sky-500/30 font-semibold">
-        + צפויה חדשה
-      </button>
-      <h3 className="text-sm font-bold text-slate-200">תזרמי מחזור (לפי תאריך)</h3>
+const TransactionList = () => {
+  const [items, setItems] = useState(baseItems);
+
+  useEffect(() => {
+    const generated = generateRecurringTransactions(RECURRING_EXPENSES, items);
+    if (generated.length) {
+      setItems((prev) => [...prev, ...generated]);
+    }
+  }, []);
+
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) => (b.sortDate || 0) - (a.sortDate || 0)),
+    [items]
+  );
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-3">
+        <button className="bg-sky-500/10 text-sky-400 text-xs px-3 py-1.5 rounded-xl border border-sky-500/30 font-semibold">
+          + צפויה חדשה
+        </button>
+        <h3 className="text-sm font-bold text-slate-200">תזרמי מחזור (לפי תאריך)</h3>
+      </div>
+      {sortedItems.map((it) => (
+        <TransactionCard key={it.id} item={it} />
+      ))}
     </div>
-    {items.map((it, i) => <TransactionCard key={i} item={it} />)}
-  </div>
-);
+  );
+};
 
 export default TransactionList;
