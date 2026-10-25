@@ -1,0 +1,24 @@
+{
+  "name": "finance-tracker-server",
+  "version": "1.0.0",
+  "description": "Backend scraper service for Israeli bank/credit card data",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "sync": "node index.js"
+  },
+  "keywords": [
+    "finance",
+    "scraper",
+    "israeli-bank-scrapers",
+    "supabase"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "israeli-bank-scrapers": "^6.8.0",
+    "@supabase/supabase-js": "^2.45.4",
+    "dotenv": "^16.4.5"
+  }
+}

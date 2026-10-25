@@ -1,0 +1,59 @@
+﻿name: Nightly Transaction Sync
+
+on:
+  schedule:
+    enabled: false
+    # Run at 3:00 AM UTC every day
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  sync-transactions:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: ./server
+        run: npm ci
+        
+      - name: Run scraper and sync to Supabase
+        working-directory: ./server
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CARD_PROVIDERS: ${{ secrets.CARD_PROVIDERS }}
+          # Isracard/Amex
+          ISRACARD_ID: ${{ secrets.ISRACARD_ID }}
+          ISRACARD_CARD6DIGITS: ${{ secrets.ISRACARD_CARD6DIGITS }}
+          ISRACARD_PASSWORD: ${{ secrets.ISRACARD_PASSWORD }}
+          AMEX_ID: ${{ secrets.AMEX_ID }}
+          AMEX_CARD6DIGITS: ${{ secrets.AMEX_CARD6DIGITS }}
+          AMEX_PASSWORD: ${{ secrets.AMEX_PASSWORD }}
+          # Max
+          MAX_USERNAME: ${{ secrets.MAX_USERNAME }}
+          MAX_PASSWORD: ${{ secrets.MAX_PASSWORD }}
+          # Other banks
+          HAPOALIM_USERNAME: ${{ secrets.HAPOALIM_USERNAME }}
+          HAPOALIM_PASSWORD: ${{ secrets.HAPOALIM_PASSWORD }}
+          LEUMI_USERNAME: ${{ secrets.LEUMI_USERNAME }}
+          LEUMI_PASSWORD: ${{ secrets.LEUMI_PASSWORD }}
+          PEPPER_USERNAME: ${{ secrets.PEPPER_USERNAME }}
+          PEPPER_PASSWORD: ${{ secrets.PEPPER_PASSWORD }}
+          # Fallback
+          CARD_USERNAME: ${{ secrets.CARD_USERNAME }}
+          CARD_PASSWORD: ${{ secrets.CARD_PASSWORD }}
+        run: node index.js
+        
+      - name: Notify on failure
+        if: failure()
+        run: echo "Nightly sync failed. Please check the logs."
