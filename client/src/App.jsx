@@ -62,7 +62,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 max-w-md mx-auto space-y-4">
+    <div dir="rtl" lang="he" className="min-h-screen bg-slate-950 text-slate-100 p-4 max-w-md mx-auto space-y-4">
       <DashboardSummary transactions={transactions} />
       <CategoryChart transactions={transactions} />
       <TransactionList transactions={transactions} providers={providers} categories={categories} />

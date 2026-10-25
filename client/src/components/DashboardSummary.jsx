@@ -29,7 +29,7 @@ const DashboardSummary = ({ transactions = [] }) => {
       <div className="rounded-2xl bg-slate-900 border border-slate-700 p-5 shadow-lg shadow-cyan-500/10">
         <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">Available balance for variable expenses</p>
         <p className="text-4xl font-bold text-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.6)]">
-          {formatCurrency(11153.4)}
+          {new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(11153.4)}
         </p>
       </div>
 

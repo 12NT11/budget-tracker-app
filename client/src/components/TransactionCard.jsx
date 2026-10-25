@@ -11,7 +11,7 @@ const TransactionCard = ({ transaction }) => {
       <div className="min-w-0 flex-1 text-right">
         <div className="flex items-center justify-end gap-2">
           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${cleared ? 'bg-emerald-500/15 text-emerald-400' : 'bg-orange-500/15 text-orange-400'}`}>
-            {cleared ? 'Cleared' : 'Pending'}
+            {cleared ? 'ירד בבנק' : 'בקנה'}
           </span>
           <h3 className="truncate text-sm font-semibold text-slate-100">{transaction.description}</h3>
         </div>
