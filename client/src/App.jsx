@@ -62,17 +62,10 @@ function App() {
   }
 
   return (
-    <div className="app">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 max-w-md mx-auto space-y-4">
       <DashboardSummary transactions={transactions} />
-      
-      <div className="main-content">
-        <CategoryChart transactions={transactions} />
-        <TransactionList 
-          transactions={transactions} 
-          providers={providers}
-          categories={categories}
-        />
-      </div>
+      <CategoryChart transactions={transactions} />
+      <TransactionList transactions={transactions} providers={providers} categories={categories} />
     </div>
   );
 }

@@ -1,59 +1,63 @@
 ﻿import React from 'react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 
-/**
- * DashboardSummary - Total spent, monthly budget stats
- * @param {Object} props
- * @param {Array} props.transactions - Array of transaction objects
- */
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 }).format(amount);
+
 const DashboardSummary = ({ transactions = [] }) => {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
-
-  // Calculate monthly total
   const monthlyTransactions = transactions.filter(tx => {
-    const txDate = new Date(tx.date);
-    return txDate >= monthStart && txDate <= monthEnd;
+    const d = new Date(tx.date);
+    return d >= monthStart && d <= monthEnd;
   });
+  const monthlyTotal = monthlyTransactions.reduce((s, tx) => s + (tx.amount || 0), 0);
+  const income = monthlyTransactions.filter(t => (t.amount || 0) > 0).reduce((s, t) => s + t.amount, 0);
+  const fixed = monthlyTransactions.filter(t => t.type === 'fixed').reduce((s, t) => s + Math.abs(t.amount || 0), 0);
+  const variable = monthlyTransactions.filter(t => t.type !== 'fixed').reduce((s, t) => s + Math.abs(t.amount || 0), 0);
+  const pending = monthlyTransactions.filter(t => t.status === 'pending').reduce((s, t) => s + Math.abs(t.amount || 0), 0);
 
-  const monthlyTotal = monthlyTransactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-  const totalSpent = transactions.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('he-IL', {
-      style: 'currency',
-      currency: 'ILS',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
+  const day = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const pacePct = Math.round((day / daysInMonth) * 100);
+  const utilPct = income ? Math.round((variable / income) * 100) : 0;
+  const dailyAvg = variable / (day || 1);
 
   return (
-    <section className="dashboard-summary">
-      <h1 className="app-title">Personal Finance Tracker</h1>
-      
-      <div className="summary-cards">
-        <div className="summary-card primary">
-          <div className="summary-card-label">This Month</div>
-          <div className="summary-card-amount">{formatCurrency(monthlyTotal)}</div>
-          <div className="summary-card-subtext">{format(now, 'MMMM yyyy')}</div>
-        </div>
+    <section className="mb-6 space-y-4">
+      <div className="rounded-2xl bg-slate-900 border border-slate-700 p-5 shadow-lg shadow-cyan-500/10">
+        <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">Available balance for variable expenses</p>
+        <p className="text-4xl font-bold text-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.6)]">
+          {formatCurrency(11153.4)}
+        </p>
+      </div>
 
-        <div className="summary-card">
-          <div className="summary-card-label">Total Spent</div>
-          <div className="summary-card-amount">{formatCurrency(totalSpent)}</div>
-          <div className="summary-card-subtext">{transactions.length} transactions</div>
-        </div>
-
-        <div className="summary-card">
-          <div className="summary-card-label">Avg. Per Transaction</div>
-          <div className="summary-card-amount">
-            {transactions.length > 0 
-              ? formatCurrency(totalSpent / transactions.length)
-              : formatCurrency(0)
-            }
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {[
+          { label: 'Income', labelHe: 'הכנסה', value: income, color: 'text-emerald-400' },
+          { label: 'Fixed', labelHe: 'קבועות', value: fixed, color: 'text-blue-400' },
+          { label: 'Variable', labelHe: 'משתנות', value: variable, color: 'text-amber-400' },
+          { label: 'Pending', labelHe: 'בקנה', value: pending, color: 'text-orange-400' },
+        ].map(m => (
+          <div key={m.label} className="rounded-xl bg-slate-800/60 border border-slate-700 p-3">
+            <p className="text-[10px] text-slate-400">{m.labelHe} · {m.label}</p>
+            <p className={`text-sm font-semibold ${m.color}`}>{formatCurrency(m.value || 0)}</p>
           </div>
-          <div className="summary-card-subtext">All time</div>
+        ))}
+      </div>
+
+      <div className="rounded-xl bg-slate-800/60 border border-slate-700 p-4">
+        <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+          <span>Pace (Day {day} of {daysInMonth})</span>
+          <span>{utilPct}% utilized</span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-slate-700 overflow-hidden">
+          <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400" style={{ width: `${pacePct}%` }} />
+        </div>
+        <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2">
+          <span>Daily avg: {formatCurrency(dailyAvg)}</span>
+          <span>{pacePct}% of month</span>
         </div>
       </div>
     </section>
