@@ -111,18 +111,25 @@ async function syncFinancyToSupabase() {
 
     // מיפוי הנתונים למבנה של Supabase
     const formattedTransactions = transactions.map((t) => ({
-      transactionId: t.transactionId,
+      id:
+        t.transactionId ||
+        `${t.valueDate?.value || t.date}_${t.chargedAmount || t.amount}_${t.description}`,
+      transactionId: t.transactionId || null,
       accountId: t.accountId || null,
       accountNumber: t.accountNumber || null,
       providerId: t.providerId || null,
-      bookingDate: t.bookingDate?.value || t.bookingDate || null,
-      transactionDate: t.transactionDate?.value || t.transactionDate || null,
-      valueDate: t.valueDate?.value || t.valueDate || null,
-      chargedAmount: t.chargedAmount ?? null,
-      chargedCurrency: t.chargedCurrency || null,
-      originalAmount: t.originalAmount ?? null,
+      bookingDate: t.bookingDate || null,
+      transactionDate: t.transactionDate || null,
+      valueDate: t.valueDate || null,
+      chargedAmount:
+        t.chargedAmount !== undefined
+          ? t.chargedAmount
+          : t.originalAmount || t.amount || 0,
+      chargedCurrency: t.chargedCurrency || "ILS",
+      originalAmount: t.originalAmount || null,
       originalCurrency: t.originalCurrency || null,
       description: t.description || "",
+      merchantName: t.merchantName || null,
       mainCategory: t.mainCategory || null,
       subCategory: t.subCategory || null,
       status: t.status || null,
