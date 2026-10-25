@@ -19,22 +19,22 @@ export async function fetchTransactions(filters = {}) {
     let query = supabase
       .from('transactions')
       .select('*')
-      .order('date', { ascending: false })
+      .order('valueDate', { ascending: false })
 
-    if (filters.provider) {
-      query = query.eq('provider', filters.provider)
+    if (filters.providerId) {
+      query = query.eq('providerId', filters.providerId)
     }
 
     if (filters.startDate) {
-      query = query.gte('date', filters.startDate)
+      query = query.gte('valueDate', filters.startDate)
     }
 
     if (filters.endDate) {
-      query = query.lte('date', filters.endDate)
+      query = query.lte('valueDate', filters.endDate)
     }
 
     if (filters.category) {
-      query = query.eq('category', filters.category)
+      query = query.eq('subCategory', filters.category)
     }
 
     const { data, error } = await query
@@ -59,12 +59,12 @@ export async function getProviders() {
   try {
     const { data, error } = await supabase
       .from('transactions')
-      .select('provider')
-      .not('provider', 'is', null)
+      .select('providerId')
+      .not('providerId', 'is', null)
 
     if (error) throw error
 
-    const providers = [...new Set(data.map(item => item.provider))]
+    const providers = [...new Set(data.map(item => item.providerId))]
     return providers
   } catch (error) {
     console.error('Failed to fetch providers:', error)
@@ -80,12 +80,12 @@ export async function getCategories() {
   try {
     const { data, error } = await supabase
       .from('transactions')
-      .select('category')
-      .not('category', 'is', null)
+      .select('subCategory, mainCategory')
+      .not('subCategory', 'is', null)
 
     if (error) throw error
 
-    const categories = [...new Set(data.map(item => item.category))]
+    const categories = [...new Set(data.map(item => item.subCategory || item.mainCategory))]
     return categories
   } catch (error) {
     console.error('Failed to fetch categories:', error)
