@@ -1,13 +1,15 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { Chart as ChartJS, ArcElement, Tooltip } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(ArcElement, Tooltip);
 
 const data = [
-  { name: 'מזון', value: 4200 },
-  { name: 'תחבורה', value: 1800 },
-  { name: 'בילויים', value: 1200 },
-  { name: 'קניות', value: 900 },
+  { name: 'מזון', value: 4200, color: '#38bdf8' },
+  { name: 'תחבורה', value: 1800, color: '#34d399' },
+  { name: 'בילויים', value: 1200, color: '#f59e0b' },
+  { name: 'קניות', value: 900, color: '#a78bfa' },
 ];
-const COLORS = ['#38bdf8', '#34d399', '#f59e0b', '#a78bfa'];
 
 const CategoryDonutCard = () => (
   <div className="bg-[#101935] rounded-2xl p-4 border border-slate-800/80 space-y-3">
@@ -17,21 +19,18 @@ const CategoryDonutCard = () => (
     </div>
     <div className="flex items-center justify-between gap-2 h-36">
       <div className="w-1/2 h-full">
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie data={data} innerRadius={35} outerRadius={55} paddingAngle={2} dataKey="value">
-              {data.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+        <Doughnut
+          data={{ labels: data.map(d => d.name), datasets: [{ data: data.map(d => d.value), backgroundColor: data.map(d => d.color), borderWidth: 0 }] }}
+          options={{ cutout: '65%', plugins: { legend: { display: false } }, maintainAspectRatio: false }}
+        />
       </div>
       <div className="w-1/2 space-y-2 text-xs">
-        {data.map((d, i) => (
+        {data.map((d) => (
           <div key={d.name} className="flex justify-between items-center text-slate-300">
             <span className="font-bold">₪{d.value.toLocaleString()}</span>
             <span className="flex items-center gap-1.5">
               {d.name}
-              <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i] }} />
+              <span className="w-2 h-2 rounded-full" style={{ background: d.color }} />
             </span>
           </div>
         ))}
