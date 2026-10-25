@@ -1,36 +1,40 @@
-﻿import React, { useState, useMemo } from 'react';
-import TransactionCard from './TransactionCard';
+﻿import React from 'react';
 
-const TransactionList = ({ transactions = [], providers = [], categories = [] }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const filtered = useMemo(() => {
-    let f = [...transactions];
-    if (searchTerm) f = f.filter(tx => tx.description?.toLowerCase().includes(searchTerm.toLowerCase()));
-    return f.sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [transactions, searchTerm]);
+const items = [
+  { desc: ' ипотека', amount: '₪4,500.0', date: '12 אוק', cat: 'דיור', status: 'cleared' },
+  { desc: 'WOLT', amount: '₪143.0', date: '10 אוק', cat: 'מזון', status: 'pending' },
+];
 
+const TransactionCard = ({ item }) => {
+  const pending = item.status === 'pending';
   return (
-    <section className="rounded-2xl bg-slate-800/60 border border-slate-700 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-slate-200">Transactions</h2>
-        <span className="text-xs text-slate-400">{filtered.length}</span>
+    <div className={`flex justify-between items-center bg-[#101935] rounded-2xl p-4 border border-slate-800/80 relative overflow-hidden mb-2.5 shadow-md ${pending ? 'border-r-4 border-r-amber-500' : 'border-r-4 border-r-emerald-500'}`}>
+      <div className="text-left">
+        <p className={`text-base font-extrabold ${pending ? 'text-amber-400' : 'text-slate-100'}`}>{item.amount}</p>
       </div>
-      <input
-        type="text"
-        placeholder="Search..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full mb-3 rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
-      />
-      <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto">
-        {filtered.length === 0 ? (
-          <p className="text-xs text-slate-400 text-center py-6">No transactions found</p>
-        ) : filtered.map(tx => (
-          <TransactionCard key={tx.hash || tx.id} transaction={tx} />
-        ))}
+      <div className="text-right">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm font-bold text-slate-100">{item.desc}</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${pending ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+            {pending ? 'בקנה' : 'ירד בבנק'}
+          </span>
+        </div>
+        <p className="text-xs text-slate-400">{item.date} • {item.cat}</p>
       </div>
-    </section>
+    </div>
   );
 };
+
+const TransactionList = () => (
+  <div>
+    <div className="flex justify-between items-center mb-3">
+      <button className="bg-sky-500/10 text-sky-400 text-xs px-3 py-1.5 rounded-xl border border-sky-500/30 font-semibold">
+        + צפויה חדשה
+      </button>
+      <h3 className="text-sm font-bold text-slate-200">תזרמי מחזור (לפי תאריך)</h3>
+    </div>
+    {items.map((it, i) => <TransactionCard key={i} item={it} />)}
+  </div>
+);
 
 export default TransactionList;
