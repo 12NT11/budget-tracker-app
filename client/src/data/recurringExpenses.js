@@ -63,8 +63,8 @@ export function generateRecurringTransactions(recurringExpenses, existingTransac
 
     generated.push({
       id: `recurring-${rec.id}-${year}-${month}`,
-      desc: rec.name,
-      amount: `₪${rec.amount.toLocaleString('he-IL')}.0`,
+      desc: rec.merchant ?? rec.name,
+      amount: `₪${Number(rec.amount ?? rec.estimated_amount ?? 0).toLocaleString('he-IL')}.0`,
       date: dateDisplay,
       cat: rec.category,
       status: rec.status === STATUS_CLEARED ? 'cleared' : 'pending',
