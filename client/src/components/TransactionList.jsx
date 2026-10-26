@@ -13,7 +13,7 @@ const TransactionCard = ({ item }) => {
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-bold text-slate-100">{item.desc}</span>
           <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${pending ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-            {pending ? מתוכנן : 'ירד'}
+            {pending ? 'מתוכנן' : 'ירד'}
           </span>
         </div>
         <p className="text-xs text-slate-400">{item.date} � {item.cat}</p>
