@@ -5,10 +5,11 @@ dotenv.config();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
 
 const CATEGORY_MAP = [
-  { keys: ['mortgage','loan','rent'], cat: 'Housing' },
-  { keys: ['electric','water','gas','internet','phone'], cat: 'Utilities' },
-  { keys: ['netflix','spotify','subscription','prime'], cat: 'Subscriptions' },
-  { keys: ['insurance'], cat: 'Insurance' },
+  { keys: ['mortgage','loan','rent','משכנתא','שכירות','הלוואה'], cat: 'Housing' },
+  { keys: ['electric','water','gas','internet','phone','חשמל','מים','גז','אינטרנט','טלפון'], cat: 'Utilities' },
+  { keys: ['netflix','spotify','subscription','prime','מנוי'], cat: 'Subscriptions' },
+  { keys: ['insurance','ביטוח'], cat: 'Insurance' },
+  { keys: ['arnona','ארנונה'], cat: 'Housing' },
 ];
 
 function categorize(desc) {

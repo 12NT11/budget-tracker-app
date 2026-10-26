@@ -16,7 +16,7 @@ const TransactionCard = ({ item }) => {
             {pending ? 'מתוכנן' : 'ירד'}
           </span>
         </div>
-        <p className="text-xs text-slate-400">{item.date} � {item.cat}</p>
+        <p className="text-xs text-slate-400">{item.date} · {item.cat}</p>
       </div>
     </div>
   );
