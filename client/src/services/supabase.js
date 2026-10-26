@@ -92,3 +92,19 @@ export async function getCategories() {
     return []
   }
 }
+
+export async function fetchRecurringExpenses(activeOnly = false) {
+  try {
+    let q = supabase.from('recurring_expenses').select('*');
+    if (activeOnly) q = q.eq('is_active', true);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data || [];
+  } catch (e) { console.error(e); return []; }
+}
+
+export async function upsertRecurringExpense(row) {
+  const { data, error } = await supabase.from('recurring_expenses').upsert(row, { onConflict: 'id' }).select();
+  if (error) throw error;
+  return data;
+}

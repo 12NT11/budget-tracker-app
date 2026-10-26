@@ -1,13 +1,5 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
-import {
-  RECURRING_EXPENSES,
-  generateRecurringTransactions,
-} from '../data/recurringExpenses';
-
-const baseItems = [
-  { id: 'tx-1', desc: ' משכנתא', amount: '₪4,500.0', date: '12 אוק', cat: 'דיור', status: 'cleared', sortDate: new Date(2026, 9, 12).getTime() },
-  { id: 'tx-2', desc: 'WOLT', amount: '₪143.0', date: '10 אוק', cat: 'מזון', status: 'pending', sortDate: new Date(2026, 9, 10).getTime() },
-];
+import React, { useEffect, useMemo, useState } from 'react';
+import { fetchRecurringExpenses } from '../services/supabase';
 
 const TransactionCard = ({ item }) => {
   const pending = item.status === 'pending';
@@ -20,17 +12,17 @@ const TransactionCard = ({ item }) => {
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-bold text-slate-100">{item.desc}</span>
           <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${pending ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-            {pending ? 'בקנה' : 'ירד בבנק'}
+            {pending ? מתוכנן : 'ירד'}
           </span>
         </div>
-        <p className="text-xs text-slate-400">{item.date} • {item.cat}</p>
+        <p className="text-xs text-slate-400">{item.date} � {item.cat}</p>
       </div>
     </div>
   );
 };
 
 const TransactionList = () => {
-  const [items, setItems] = useState(baseItems);
+  const [items, setItems] = useState([]);
 
   useEffect(() => {
     const generated = generateRecurringTransactions(RECURRING_EXPENSES, items);
@@ -48,7 +40,7 @@ const TransactionList = () => {
     <div>
       <div className="flex justify-between items-center mb-3">
         <button className="bg-sky-500/10 text-sky-400 text-xs px-3 py-1.5 rounded-xl border border-sky-500/30 font-semibold">
-          + צפויה חדשה
+          + עסקה קבועה
         </button>
         <h3 className="text-sm font-bold text-slate-200">תזרמי מחזור (לפי תאריך)</h3>
       </div>
