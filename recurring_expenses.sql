@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS recurring_expenses (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE recurring_expenses ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE recurring_expenses ADD COLUMN IF NOT EXISTS amount NUMERIC;
 ALTER TABLE recurring_expenses ADD COLUMN IF NOT EXISTS merchant TEXT;
 ALTER TABLE recurring_expenses ADD COLUMN IF NOT EXISTS category TEXT;
 ALTER TABLE recurring_expenses ADD COLUMN IF NOT EXISTS frequency TEXT;
