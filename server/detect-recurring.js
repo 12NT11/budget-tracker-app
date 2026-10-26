@@ -44,8 +44,10 @@ async function main() {
     const avgAmt = amounts.reduce((a,b)=>a+b,0)/(amounts.length||1);
     const day = new Date(dates[dates.length-1]).getDate();
     rows.push({
-      id: key.replace(/\s+/g,'-'),
+      id: key.replace(/\\s+/g,'-'),
+      name: items[0].description || items[0].desc || key,
       merchant: items[0].description || items[0].desc || key,
+      amount: Math.round(avgAmt*100)/100,
       category: categorize(items[0].description || items[0].desc || key),
       frequency,
       estimated_amount: Math.round(avgAmt*100)/100,
