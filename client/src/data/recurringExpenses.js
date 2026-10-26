@@ -54,7 +54,7 @@ export function generateRecurringTransactions(recurringExpenses, existingTransac
   const generated = [];
 
   for (const rec of recurringExpenses) {
-    const day = Math.min(rec.dayOfMonth, daysInMonth);
+    const day = Math.min(rec.dayOfMonth ?? rec.day_of_month, daysInMonth);
     const date = new Date(year, month, day);
     if (date < start || date > end) continue;
 

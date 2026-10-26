@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { fetchRecurringExpenses } from '../services/supabase';
+import { RECURRING_EXPENSES, generateRecurringTransactions } from '../data/recurringExpenses';
 
 const TransactionCard = ({ item }) => {
   const pending = item.status === 'pending';
@@ -25,10 +26,13 @@ const TransactionList = () => {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    const generated = generateRecurringTransactions(RECURRING_EXPENSES, items);
-    if (generated.length) {
-      setItems((prev) => [...prev, ...generated]);
-    }
+    (async () => {
+      const recurring = await fetchRecurringExpenses(true);
+      const generated = generateRecurringTransactions(recurring, items);
+      if (generated.length) {
+        setItems((prev) => [...prev, ...generated]);
+      }
+    })();
   }, []);
 
   const sortedItems = useMemo(
