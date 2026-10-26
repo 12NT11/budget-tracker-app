@@ -40,7 +40,7 @@ async function main() {
     if (avgGap >= 25 && avgGap <= 35) frequency = 'monthly';
     else if (avgGap >= 5 && avgGap <= 9) frequency = 'weekly';
     else continue;
-    const amounts = items.map(t => Math.abs(Number(t.chargedAmount ?? t.amount ?? 0))).filter(n=>!isNaN(n));
+    const amounts = items.map(t => Math.abs(Number(t.chargedAmount ?? t.amount ?? t.originalAmount ?? t.original_amount ?? 0))).filter(n=>!isNaN(n));
     const avgAmt = amounts.reduce((a,b)=>a+b,0)/(amounts.length||1);
     const day = new Date(dates[dates.length-1]).getDate();
     rows.push({

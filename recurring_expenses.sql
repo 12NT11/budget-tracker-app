@@ -23,6 +23,8 @@ ALTER TABLE recurring_expenses ADD COLUMN IF NOT EXISTS last_charged DATE;
 ALTER TABLE recurring_expenses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
 ALTER TABLE recurring_expenses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
-ALTER TABLE recurring_expenses ALTER COLUMN id TYPE TEXT;
+-- Backfill null columns from existing data
+UPDATE recurring_expenses SET name = merchant WHERE name IS NULL;
+UPDATE recurring_expenses SET amount = estimated_amount WHERE amount IS NULL OR amount = 0;
 ALTER TABLE recurring_expenses ALTER COLUMN name DROP NOT NULL;
 ALTER TABLE recurring_expenses ALTER COLUMN amount DROP NOT NULL;
