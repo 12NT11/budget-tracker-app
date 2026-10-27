@@ -1,7 +1,6 @@
 import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
-import fs from "fs";
 
 dotenv.config();
 
@@ -17,18 +16,18 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 });
 
 async function syncFinancyToSupabase() {
-  console.log("🚀 מתחיל סנכרון מול Financy...");
+  console.log("🚀 מתחיל סנכרון מול Financy via Browserless...");
 
-  if (process.env.FINANCY_STORAGE_STATE) {
-    fs.writeFileSync("state.json", process.env.FINANCY_STORAGE_STATE);
+  const browserlessToken = process.env.BROWSERLESS_TOKEN;
+  if (!browserlessToken) {
+    throw new Error("❌ חסר BROWSERLESS_TOKEN במשתני הסביבה!");
   }
 
-  if (!fs.existsSync("state.json")) {
-    throw new Error("❌ קובץ state.json לא נמצא! יש לייצר אותו תחילה.");
-  }
-
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ storageState: "state.json" });
+  // חיבור מרוחק ל-Browserless
+  const endpoint = `wss://production-sfo.browserless.io?token=${browserlessToken}`;
+  const browser = await chromium.connectOverCDP(endpoint);
+  
+  const context = await browser.newContext();
   const page = await context.newPage();
 
   let bearerToken = null;
@@ -45,7 +44,7 @@ async function syncFinancyToSupabase() {
   });
 
   try {
-    console.log("📥 טוען את דשבורד Financy...");
+    console.log("📥 טוען את דשבורד Financy בדפדפן הענן...");
     await page.goto("https://financy.open-finance.ai/dashboard", {
       waitUntil: "networkidle",
     });
@@ -71,7 +70,7 @@ async function syncFinancyToSupabase() {
 
     console.log("🔑 Bearer Token אותר בהצלחה!");
 
-    // שליפה ישירה מכתובת ה-API המדויקת שמצאת
+    // שליפה ישירה מכתובת ה-API המדויקת של Financy
     console.log("📦 שולף את נתוני התנועות מה-API של Financy...");
     const apiUrl =
       "https://api.open-finance.ai/v2/dashboard/transactions?entity=TRANSACTION&limit=5000&offset=0&orderField=transactionId&order=ASC&filters=%5B%7B%22field%22:%22customerId%22,%22operator%22:%22in%22,%22value%22:%22%5B%5C%22212430508%5C%22%5D%22%7D%5D&columns=transactionId,accountId,providerId,type,accountNumber,bookingDate,transactionDate,valueDate,chargedAmount,chargedCurrency,originalAmount,originalCurrency,description,merchantName,mainCategory,subCategory,categorizedBy,additionalInfo,status,connectionId,customerId,code,installmentsNumber,installmentsTotal";
